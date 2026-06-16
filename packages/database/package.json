@@ -1,0 +1,30 @@
+{
+  "name": "@healthbridge/database",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run prisma:generate && tsc && cp -r src/generated dist/",
+    "dev": "tsc -w",
+    "prisma:generate": "prisma generate --schema=prisma/tenant.schema.prisma && prisma generate --schema=prisma/control-plane.schema.prisma",
+    "tenant:migrate": "prisma db push --schema=prisma/tenant.schema.prisma",
+    "tenant:seed": "ts-node src/seed.ts",
+    "control-plane:migrate": "prisma db push --schema=prisma/control-plane.schema.prisma",
+    "control-plane:seed": "ts-node src/seed-control-plane.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.12.1",
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.5",
+    "prisma": "^5.12.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  }
+}

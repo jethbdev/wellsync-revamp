@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MediStock EMR — Teleconsultation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#6C63FF;--accent-light:#EEEDFE;--accent-mid:#8B85FF;
+  --ink:#1A1A2E;--muted:#6B6B8A;--faint:#9999B3;
+  --surface:#F5F7FB;--white:#FFFFFF;
+  --card-shadow:0 2px 16px rgba(108,99,255,0.07),0 1px 3px rgba(0,0,0,0.04);
+  --card-shadow-hover:0 6px 28px rgba(108,99,255,0.13),0 2px 8px rgba(0,0,0,0.06);
+  --rsm:8px;--rmd:12px;--rlg:18px;--rxl:28px;
+  --warn-bg:#fff8e6;--warn-text:#9a6200;
+  --crit-bg:#fef0f0;--crit-text:#a03030;
+  --info-bg:#eff6ff;--info-text:#1d4ed8;
+  --border-subtle:rgba(108,99,255,0.08);
+  --tr-hover:#FAFAFF;
+  --input-bg:var(--surface);--input-focus-bg:#FFFFFF;
+  --modal-overlay-bg:rgba(26,26,46,.4);
+  --video-bg:#0d0d1a;--video-ctrl:#1e1e36;--video-ctrl-hover:#2a2a48;
+}
+html.dark{
+  --accent:#8880FF;--accent-light:rgba(136,128,255,0.13);--accent-mid:#A09AFF;
+  --ink:#CDD9E5;--muted:#768390;--faint:#444C56;
+  --surface:#0D1117;--white:#161B22;
+  --card-shadow:0 1px 2px rgba(0,0,0,0.5),0 4px 20px rgba(0,0,0,0.45);
+  --warn-bg:rgba(251,191,36,0.1);--warn-text:#E3B341;
+  --crit-bg:rgba(248,113,113,0.1);--crit-text:#FF7B72;
+  --info-bg:rgba(96,165,250,0.1);--info-text:#79C0FF;
+  --border-subtle:rgba(255,255,255,0.06);
+  --tr-hover:rgba(255,255,255,0.03);
+  --input-bg:#21262D;--input-focus-bg:#2D333B;
+  --modal-overlay-bg:rgba(0,0,0,0.7);
+  --video-bg:#090910;--video-ctrl:#131320;--video-ctrl-hover:#1e1e32;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);line-height:1.5;display:flex;flex-direction:column}
+h1,h2,h3,h4{font-family:'Sora',sans-serif}
+
+/* TOPBAR */
+.topbar{height:56px;flex-shrink:0;background:var(--white);display:flex;align-items:center;padding:0 20px;z-index:50;box-shadow:0 1px 0 var(--border-subtle);gap:0}
+.tb-logo{display:flex;align-items:center;gap:9px;font-family:'Sora',sans-serif;font-weight:700;font-size:16px;color:var(--ink);text-decoration:none;margin-right:16px;flex-shrink:0}
+.tb-logo-icon{width:30px;height:30px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+.tb-logo-icon svg{width:16px;height:16px;fill:white}
+.tb-divider{width:1px;height:22px;background:var(--border-subtle);margin:0 12px}
+.tb-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--muted);text-decoration:none;padding:5px 10px;border-radius:var(--rsm);transition:background .15s,color .15s}
+.tb-back:hover{background:var(--accent-light);color:var(--accent)}
+.tb-back svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tb-session{display:flex;align-items:center;gap:8px}
+.tb-session-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 2px rgba(34,197,94,.25)}50%{box-shadow:0 0 0 5px rgba(34,197,94,.08)}}
+.tb-session-label{font-size:12px;font-weight:600;color:var(--ink)}
+.tb-session-time{font-size:12px;color:var(--faint);font-family:'Sora',sans-serif;font-weight:700;min-width:38px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb-icon-btn{width:32px;height:32px;border-radius:var(--rmd);border:none;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s}
+.tb-icon-btn:hover{background:var(--accent-light)}
+.tb-icon-btn svg{width:15px;height:15px;stroke:var(--muted);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tb-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:10px;font-weight:700;color:white;flex-shrink:0}
+.tb-user-name{font-size:12px;font-weight:600;color:var(--ink)}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600}
+.pill.ok{background:var(--accent-light);color:var(--accent)}
+.pill.warn{background:var(--warn-bg);color:var(--warn-text)}
+.pill.crit{background:var(--crit-bg);color:var(--crit-text)}
+.pill.xs{padding:1px 7px;font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+
+/* LAYOUT */
+.tc-layout{flex:1;display:flex;overflow:hidden;transition:all .3s cubic-bezier(.22,1,.36,1)}
+
+/* LEFT: VIDEO */
+.tc-left{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--video-bg);position:relative}
+
+/* Video Stage */
+.video-stage{flex:1;position:relative;overflow:hidden}
+.video-main{width:100%;height:100%;background:linear-gradient(135deg,#0f0f2a 0%,#1a1035 50%,#0d0d1f 100%);display:flex;align-items:center;justify-content:center;position:relative}
+.video-patient-avatar{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#3730a3,#6c63ff);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:30px;font-weight:700;color:white;box-shadow:0 0 0 4px rgba(108,99,255,.25),0 0 60px rgba(108,99,255,.15)}
+.video-overlay-tl{position:absolute;top:14px;left:14px;display:flex;align-items:center;gap:8px}
+.video-overlay-tr{position:absolute;top:14px;right:14px;display:flex;align-items:center;gap:8px}
+.video-badge{background:rgba(0,0,0,.52);backdrop-filter:blur(8px);border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.8)}
+.video-badge svg{width:11px;height:11px;stroke:rgba(255,255,255,.7);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.conn-bars{display:flex;align-items:flex-end;gap:2px;height:13px}
+.conn-bar{width:3px;border-radius:2px;background:rgba(255,255,255,.2)}
+.conn-bar.on{background:#22c55e}
+.b1{height:5px}.b2{height:7px}.b3{height:10px}.b4{height:13px}
+.rec-dot{width:6px;height:6px;border-radius:50%;background:#e03030;animation:rec-blink 1.4s infinite}
+@keyframes rec-blink{0%,100%{opacity:1}50%{opacity:.25}}
+.video-name-label{position:absolute;bottom:14px;left:14px;background:rgba(0,0,0,.52);backdrop-filter:blur(8px);border-radius:var(--rsm);padding:5px 12px;font-size:12px;font-weight:600;color:white}
+.video-pip{position:absolute;bottom:14px;right:14px;width:150px;border-radius:var(--rmd);overflow:hidden;background:linear-gradient(135deg,#1a1035,#111130);box-shadow:0 4px 20px rgba(0,0,0,.5);cursor:pointer;transition:transform .2s}
+.video-pip:hover{transform:scale(1.04)}
+.video-pip-inner{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative}
+.video-pip-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:white}
+.video-pip-name{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.75);text-align:center;padding:3px 4px;background:rgba(0,0,0,.45)}
+
+/* Controls */
+.video-controls{height:68px;flex-shrink:0;background:var(--video-ctrl);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 20px;position:relative}
+.vc-btn{width:44px;height:44px;border-radius:50%;border:none;background:var(--video-ctrl-hover);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .15s;flex-shrink:0}
+.vc-btn:hover{transform:scale(1.07)}
+.vc-btn svg{width:17px;height:17px;stroke:rgba(255,255,255,.82);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.vc-btn.muted{background:rgba(224,48,48,.18)}
+.vc-btn.muted svg{stroke:#f87171}
+.vc-btn.end{width:50px;height:50px;background:#e03030;margin:0 6px}
+.vc-btn.end:hover{background:#c02020;transform:scale(1.07)}
+.vc-btn.end svg{stroke:white;width:19px;height:19px}
+.vc-sep{width:1px;height:22px;background:rgba(255,255,255,.07);margin:0 4px}
+/* Collapse toggle — floats on left edge of panel */
+.panel-toggle{position:absolute;left:-14px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:var(--white);border:1.5px solid var(--border-subtle);box-shadow:var(--card-shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:background .15s}
+.panel-toggle:hover{background:var(--accent-light)}
+.panel-toggle svg{width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s}
+.tc-layout.collapsed .panel-toggle svg{transform:rotate(180deg)}
+
+/* RIGHT PANEL */
+.tc-right{width:400px;flex-shrink:0;display:flex;flex-direction:column;background:var(--white);border-left:1px solid var(--border-subtle);overflow:hidden;position:relative;transition:width .3s cubic-bezier(.22,1,.36,1),opacity .25s}
+.tc-layout.collapsed .tc-right{width:0;opacity:0;pointer-events:none;border-left:none}
+
+/* Panel header */
+.panel-head{padding:14px 16px 0;flex-shrink:0}
+.panel-head-title{font-size:14px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif}
+.panel-head-sub{font-size:11px;color:var(--faint);margin-top:2px;margin-bottom:12px}
+.panel-head-patient{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border-radius:var(--rmd);margin-bottom:12px}
+.panel-pt-avatar{width:36px;height:36px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:white;flex-shrink:0}
+.panel-pt-name{font-size:13px;font-weight:700;color:var(--ink)}
+.panel-pt-sub{font-size:11px;color:var(--faint);margin-top:1px}
+
+/* Form body */
+.panel-body{flex:1;overflow-y:auto;padding:0 16px 12px}
+
+/* Form sections */
+.form-section{margin-bottom:16px}
+.form-section-label{font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:8px}
+.form-section-label .step-badge{width:17px;height:17px;border-radius:5px;background:var(--accent-light);color:var(--accent);font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:11px;font-weight:600;color:var(--muted)}
+.field input,.field select,.field textarea{border:none;border-radius:var(--rsm);padding:8px 10px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--input-bg);outline:none;transition:box-shadow .2s,background .2s;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{box-shadow:0 0 0 2px var(--accent);background:var(--input-focus-bg)}
+.field textarea{resize:vertical;min-height:90px;line-height:1.6}
+.field textarea::placeholder,.field input::placeholder{color:var(--faint);font-size:12px}
+.field select{appearance:none;cursor:pointer}
+.field-row{display:grid;gap:8px}
+.field-row.cols2{grid-template-columns:1fr 1fr}
+.field-row.cols3{grid-template-columns:1fr 1fr 1fr}
+.bmi-display{border:none;border-radius:var(--rsm);padding:8px 10px;font-size:12.5px;font-weight:700;color:var(--accent);background:var(--accent-light);font-family:'Sora',sans-serif}
+
+/* Vitals row */
+.vitals-inline{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.vital-inline-item{display:flex;flex-direction:column;gap:3px}
+.vital-inline-label{font-size:10px;font-weight:600;color:var(--faint)}
+.vital-inline-input{border:none;border-radius:var(--rsm);padding:7px 9px;font-size:13px;font-family:'Sora',sans-serif;font-weight:600;color:var(--ink);background:var(--input-bg);outline:none;transition:box-shadow .2s;width:100%;text-align:center}
+.vital-inline-input:focus{box-shadow:0 0 0 2px var(--accent);background:var(--input-focus-bg)}
+.vital-inline-unit{font-size:9px;color:var(--faint);text-align:center}
+
+/* Rx list */
+.rx-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.rx-item{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:var(--rsm);padding:8px 10px}
+.rx-item-icon{width:28px;height:28px;border-radius:8px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rx-item-icon svg{width:13px;height:13px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rx-item-name{font-size:12px;font-weight:600;color:var(--ink);flex:1}
+.rx-item-dose{font-size:11px;color:var(--muted)}
+.rx-item-remove{width:20px;height:20px;border-radius:5px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s,background .15s;flex-shrink:0}
+.rx-item:hover .rx-item-remove{opacity:1}
+.rx-item-remove:hover{background:var(--crit-bg)}
+.rx-item-remove svg{width:10px;height:10px;stroke:var(--crit-text);fill:none;stroke-width:2.5;stroke-linecap:round}
+.rx-empty{font-size:12px;color:var(--faint);padding:8px 0;font-style:italic}
+.rx-add-form{background:var(--surface);border-radius:var(--rmd);padding:10px;display:flex;flex-direction:column;gap:8px}
+.rx-add-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;padding:2px 0;transition:opacity .15s}
+.rx-add-btn:hover{opacity:.7}
+.rx-add-btn svg{width:12px;height:12px;stroke:var(--accent);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Bottom bar */
+.panel-foot{flex-shrink:0;padding:12px 16px;border-top:1px solid var(--border-subtle);display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;transition:all .18s;font-family:'Sora',sans-serif;flex-shrink:0}
+.btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{background:var(--accent-mid);transform:translateY(-1px);box-shadow:0 4px 14px rgba(108,99,255,.32)}
+.btn-outline{background:var(--white);color:var(--muted);box-shadow:var(--card-shadow)}
+.btn-outline:hover{background:var(--accent-light);color:var(--accent)}
+.btn-danger{background:var(--crit-bg);color:var(--crit-text)}
+.btn-danger:hover{background:var(--crit-text);color:white}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--white);border-radius:var(--rxl);width:460px;max-width:92vw;box-shadow:0 24px 80px rgba(0,0,0,.3);transform:scale(.97) translateY(8px);transition:transform .3s cubic-bezier(.22,1,.36,1)}
+.modal-overlay.open .modal{transform:scale(1) translateY(0)}
+.modal-top{padding:20px 24px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif}
+.modal-close{width:30px;height:30px;border-radius:7px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.modal-close:hover{background:var(--surface)}
+.modal-close svg{width:13px;height:13px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round}
+.modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+.modal-foot{padding:0 24px 20px;display:flex;gap:8px;justify-content:flex-end}
+
+/* Toast */
+.toast-wrap{position:fixed;bottom:20px;right:20px;border-radius:var(--rmd);overflow:hidden;transform:translateY(20px);opacity:0;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s;pointer-events:none;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.25);background:#1A1A2E}
+.toast-wrap.show{transform:translateY(0);opacity:1}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 18px;font-size:13px;font-weight:500;color:white}
+.toast svg{width:14px;height:14px;fill:none;stroke:white;stroke-width:2.5;stroke-linecap:round;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="emr_updated_2.html" class="tb-logo">
+    <div class="tb-logo-icon"><svg viewBox="0 0 20 20"><path d="M10 2a1 1 0 0 1 1 1v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V3a1 1 0 0 1 1-1zm0 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg></div>
+    MediStock EMR
+  </a>
+  <div class="tb-divider"></div>
+  <a href="emr_updated_2.html" class="tb-back">
+    <svg viewBox="0 0 13 13"><path d="M8 2.5L3.5 6.5 8 10.5"/></svg>
+    Back to EMR
+  </a>
+  <div class="tb-divider"></div>
+  <div class="tb-session">
+    <div class="tb-session-dot"></div>
+    <span class="tb-session-label">Live Session</span>
+    <span class="tb-session-time" id="session-timer">00:00</span>
+  </div>
+  <div class="tb-right">
+    <button class="tb-icon-btn" onclick="showToast('Screen sharing started')" title="Share screen">
+      <svg viewBox="0 0 16 16"><rect x="1" y="2.5" width="14" height="9" rx="2"/><path d="M5.5 13.5h5M8 11.5v2"/></svg>
+    </button>
+    <div class="tb-divider"></div>
+    <div class="tb-avatar">MS</div>
+    <div class="tb-user-name">Dr. M. Santos</div>
+    <span class="pill ok xs">Internal Medicine</span>
+    <button class="tb-icon-btn" onclick="toggleDark()" title="Toggle theme">
+      <svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="tc-layout" id="tc-layout">
+
+  <!-- LEFT: VIDEO -->
+  <div class="tc-left">
+    <div class="video-stage">
+      <div class="video-main">
+
+        <!-- Top-left: connection -->
+        <div class="video-overlay-tl">
+          <div class="video-badge">
+            <div class="conn-bars">
+              <div class="conn-bar b1 on"></div>
+              <div class="conn-bar b2 on"></div>
+              <div class="conn-bar b3 on"></div>
+              <div class="conn-bar b4 on"></div>
+            </div>
+            HD · 36ms
+          </div>
+        </div>
+
+        <!-- Top-right: recording -->
+        <div class="video-overlay-tr">
+          <div class="video-badge" style="cursor:pointer" onclick="showToast('Recording paused')">
+            <div class="rec-dot"></div>
+            REC
+          </div>
+        </div>
+
+        <!-- Patient avatar -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+          <div class="video-patient-avatar">JD</div>
+          <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.6)">Camera connecting…</div>
+        </div>
+
+        <!-- Name label -->
+        <div class="video-name-label">Juan Dela Cruz — Patient</div>
+
+        <!-- Doctor PIP -->
+        <div class="video-pip">
+          <div class="video-pip-inner">
+            <div class="video-pip-avatar">MS</div>
+          </div>
+          <div class="video-pip-name">Dr. Santos (You)</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="video-controls">
+      <button class="vc-btn muted" id="btn-mic" onclick="toggleCtrl('mic')" title="Toggle mic">
+        <svg viewBox="0 0 20 20"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 10a6 6 0 0 0 12 0M10 16v3M7.5 19h5"/></svg>
+      </button>
+      <button class="vc-btn" id="btn-cam" onclick="toggleCtrl('cam')" title="Toggle camera">
+        <svg viewBox="0 0 20 20"><rect x="1" y="4.5" width="13" height="11" rx="2.5"/><path d="M14 8.5l5-3v9l-5-3"/></svg>
+      </button>
+      <div class="vc-sep"></div>
+      <button class="vc-btn" onclick="showToast('Screen sharing started')" title="Share screen">
+        <svg viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="11" rx="2"/><path d="M7 17h6M10 14v3"/></svg>
+      </button>
+      <button class="vc-btn" onclick="showToast('Chat opened')" title="Chat">
+        <svg viewBox="0 0 20 20"><path d="M2 4.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7l-4 3V4.5z"/></svg>
+      </button>
+      <div class="vc-sep"></div>
+      <button class="vc-btn end" onclick="openEndModal()" title="End call">
+        <svg viewBox="0 0 20 20"><path d="M3 10.5c0-4 3.1-7.5 7-7.5s7 3.5 7 7.5M1 13.5l2.5-3.5 3 1-1 2.5c3 1.5 6 1.5 9 0l-1-2.5 3-1 2.5 3.5c-4 4-14 4-18 0z"/></svg>
+      </button>
+      <div class="vc-sep"></div>
+      <button class="vc-btn" onclick="showToast('More options')" title="More">
+        <svg viewBox="0 0 20 20"><circle cx="5" cy="10" r="1.5" fill="rgba(255,255,255,.82)"/><circle cx="10" cy="10" r="1.5" fill="rgba(255,255,255,.82)"/><circle cx="15" cy="10" r="1.5" fill="rgba(255,255,255,.82)"/></svg>
+      </button>
+    </div>
+
+    <!-- Collapse toggle (sits on right edge of left panel) -->
+    <div style="position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:20">
+      <button class="panel-toggle" id="panel-toggle-btn" onclick="togglePanel()" title="Toggle consultation form">
+        <svg viewBox="0 0 12 12"><path d="M7.5 2L4 6l3.5 4"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- RIGHT: CONSULTATION FORM -->
+  <div class="tc-right" id="tc-right">
+
+    <div class="panel-head">
+      <div class="panel-head-title">Record New Visit</div>
+      <div class="panel-head-sub">Teleconsultation · Jun 14, 2026</div>
+      <div class="panel-head-patient">
+        <div class="panel-pt-avatar">JD</div>
+        <div>
+          <div class="panel-pt-name">Juan Dela Cruz</div>
+          <div class="panel-pt-sub">MRN-0034812 · 47M · O+ · <span style="color:var(--crit-text);font-weight:600">⚠ Penicillin allergy</span></div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+          <span class="pill warn">Hypertension</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-body">
+
+      <!-- 1. VITAL SIGNS -->
+      <div class="form-section">
+        <div class="form-section-label">
+          <span class="step-badge">1</span>
+          Vital Signs
+        </div>
+        <div class="vitals-inline">
+          <div class="vital-inline-item">
+            <div class="vital-inline-label">Height (cm)</div>
+            <input class="vital-inline-input" type="number" id="v-height" value="168" oninput="calcBMI()"/>
+            <div class="vital-inline-unit">cm</div>
+          </div>
+          <div class="vital-inline-item">
+            <div class="vital-inline-label">Weight (kg)</div>
+            <input class="vital-inline-input" type="number" id="v-weight" value="82" oninput="calcBMI()"/>
+            <div class="vital-inline-unit">kg</div>
+          </div>
+          <div class="vital-inline-item">
+            <div class="vital-inline-label">BMI</div>
+            <div class="vital-inline-input bmi-display" id="v-bmi" style="text-align:center;line-height:2">29.0</div>
+            <div class="vital-inline-unit" id="v-bmi-label" style="color:var(--warn-text)">Overweight</div>
+          </div>
+        </div>
+        <div class="vitals-inline">
+          <div class="vital-inline-item">
+            <div class="vital-inline-label">BP (mmHg)</div>
+            <input class="vital-inline-input" type="text" value="142/88"/>
+            <div class="vital-inline-unit" style="color:var(--warn-text)">↑ Elevated</div>
+          </div>
+          <div class="vital-inline-item">
+            <div class="vital-inline-label">HR (bpm)</div>
+            <input class="vital-inline-input" type="number" value="78"/>
+            <div class="vital-inline-unit">Normal</div>
+          </div>
+          <div class="vital-inline-item">
+            <div class="vital-inline-label">Temp (°C)</div>
+            <input class="vital-inline-input" type="number" value="36.8" step="0.1"/>
+            <div class="vital-inline-unit">Normal</div>
+          </div>
+        </div>
+        <div class="vitals-inline">
+          <div class="vital-inline-item">
+            <div class="vital-inline-label">SpO₂ (%)</div>
+            <input class="vital-inline-input" type="number" value="98"/>
+            <div class="vital-inline-unit">Normal</div>
+          </div>
+          <div class="vital-inline-item">
+            <div class="vital-inline-label">RR (/min)</div>
+            <input class="vital-inline-input" type="number" value="16"/>
+            <div class="vital-inline-unit">Normal</div>
+          </div>
+          <div class="vital-inline-item">
+            <div class="vital-inline-label">Pain (0–10)</div>
+            <input class="vital-inline-input" type="number" min="0" max="10" value="3"/>
+            <div class="vital-inline-unit">Mild</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. CLINICAL NOTES & DIAGNOSIS -->
+      <div class="form-section">
+        <div class="form-section-label">
+          <span class="step-badge">2</span>
+          Clinical Notes &amp; Diagnosis
+        </div>
+        <div class="field-row cols2" style="margin-bottom:10px">
+          <div class="field">
+            <label>Mode of Transaction</label>
+            <select>
+              <option selected>Teleconsultation</option>
+              <option>Walk-in</option>
+              <option>Home Visit</option>
+              <option>Emergency</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Primary ICD-10 Code</label>
+            <select id="icd-select">
+              <option value="">Select code…</option>
+              <option value="I10" selected>I10 — Essential Hypertension</option>
+              <option value="E78.5">E78.5 — Dyslipidemia</option>
+              <option value="N18.2">N18.2 — CKD Stage 2</option>
+              <option value="J06.9">J06.9 — Upper Respiratory Infection</option>
+              <option value="K21.0">K21.0 — GERD</option>
+              <option value="M54.5">M54.5 — Low Back Pain</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Chief Complaint</label>
+          <input type="text" placeholder="Patient's main concern…" value="Persistent morning headaches, blood pressure monitoring"/>
+        </div>
+        <div class="field">
+          <label>SOAP Notes (Subjective, Objective, Assessment &amp; Plan)</label>
+          <textarea id="soap-notes" placeholder="S: Patient reports…&#10;O: BP 142/88, HR 78, SpO₂ 98%…&#10;A: Hypertension Stage 2, inadequately controlled…&#10;P: Continue Amlodipine 10mg, refer to dietician…">S: Patient reports persistent morning headaches, mostly when forgetting medication. Denies chest pain, dyspnea, or palpitations. Work stress high, diet non-compliant.
+
+O: BP 142/88 mmHg. HR 78 bpm. Weight 82 kg (+2 kg). SpO₂ 98%. Lungs clear to auscultation. No pedal edema.
+
+A: Hypertension Stage 2 — inadequately controlled. Likely exacerbated by dietary non-compliance and psychosocial stress. Early renal impairment (eGFR 78) warrants close monitoring.
+
+P: Continue Amlodipine 10mg + HCTZ 25mg. Order 24h ambulatory BP monitoring. Refer to dietician (DASH diet). Repeat lipid panel and eGFR in 3 months. Follow-up in 2 weeks.</textarea>
+        </div>
+      </div>
+
+      <!-- 3. E-PRESCRIBE ORDER -->
+      <div class="form-section">
+        <div class="form-section-label">
+          <span class="step-badge">3</span>
+          E-Prescribe Order
+        </div>
+
+        <!-- Rx list -->
+        <div class="rx-list" id="rx-list">
+          <div class="rx-item">
+            <div class="rx-item-icon"><svg viewBox="0 0 14 14"><path d="M4 1.5h6l2 3H2L4 1.5z"/><rect x="1" y="4.5" width="12" height="8" rx="1.5"/><path d="M5 8h4M7 6.5v3"/></svg></div>
+            <div style="flex:1;min-width:0">
+              <div class="rx-item-name">Amlodipine 10mg</div>
+              <div class="rx-item-dose">1 tab · Once daily · 30 days · Qty: 30</div>
+            </div>
+            <button class="rx-item-remove" onclick="removeRx(this)" title="Remove">
+              <svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg>
+            </button>
+          </div>
+          <div class="rx-item">
+            <div class="rx-item-icon"><svg viewBox="0 0 14 14"><path d="M4 1.5h6l2 3H2L4 1.5z"/><rect x="1" y="4.5" width="12" height="8" rx="1.5"/><path d="M5 8h4M7 6.5v3"/></svg></div>
+            <div style="flex:1;min-width:0">
+              <div class="rx-item-name">Hydrochlorothiazide 25mg</div>
+              <div class="rx-item-dose">1 tab · Once daily · 30 days · Qty: 30</div>
+            </div>
+            <button class="rx-item-remove" onclick="removeRx(this)" title="Remove">
+              <svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Rx form -->
+        <div class="rx-add-form" id="rx-add-form" style="display:none">
+          <div class="field-row cols2">
+            <div class="field" style="margin:0">
+              <label>Medication (PNF Generic)</label>
+              <input type="text" id="rx-name" placeholder="e.g. Paracetamol, Amlodipine…"/>
+            </div>
+            <div class="field" style="margin:0">
+              <label>Brand Name (Optional)</label>
+              <input type="text" id="rx-brand" placeholder="e.g. Biogesic, Norvasc…"/>
+            </div>
+          </div>
+          <div class="field" style="margin:0">
+            <label>Dose &amp; Instructions</label>
+            <input type="text" id="rx-dose" placeholder="e.g. 1 tablet, 500mg…" value="1 tablet"/>
+          </div>
+          <div class="field-row cols3">
+            <div class="field" style="margin:0">
+              <label>Frequency</label>
+              <select id="rx-freq">
+                <option>Once daily</option>
+                <option>Twice daily</option>
+                <option>Three times daily</option>
+                <option>Every 8 hours</option>
+                <option>Every 6 hours</option>
+                <option>As needed</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0">
+              <label>Duration</label>
+              <input type="text" id="rx-duration" value="30 days"/>
+            </div>
+            <div class="field" style="margin:0">
+              <label>Quantity</label>
+              <input type="number" id="rx-qty" value="30" min="1"/>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn btn-outline" style="padding:6px 14px;font-size:12px" onclick="toggleRxForm(false)">Cancel</button>
+            <button class="btn btn-primary" style="padding:6px 14px;font-size:12px" onclick="addRx()">Add to Prescription</button>
+          </div>
+        </div>
+
+        <button class="rx-add-btn" id="rx-add-toggle" onclick="toggleRxForm(true)">
+          <svg viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9"/></svg>
+          Add to Prescription
+        </button>
+      </div>
+
+    </div><!-- /panel-body -->
+
+    <!-- Footer -->
+    <div class="panel-foot">
+      <button class="btn btn-outline" onclick="showToast('Draft saved')">Save Draft</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveConsultation()">
+        <svg viewBox="0 0 13 13"><path d="M2 6.5l3 3 6-6"/></svg>
+        Save Consultation &amp; Issue Prescription
+      </button>
+    </div>
+
+  </div><!-- /tc-right -->
+</div><!-- /tc-layout -->
+
+<!-- END CALL MODAL -->
+<div class="modal-overlay" id="modal-end" onclick="if(event.target===this)closeEndModal()">
+  <div class="modal">
+    <div class="modal-top">
+      <span class="modal-title">End Consultation?</span>
+      <button class="modal-close" onclick="closeEndModal()"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);line-height:1.65">This will end the video session for both you and the patient. Make sure to save the consultation before ending.</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer">
+          <input type="checkbox" checked style="accent-color:var(--accent);width:15px;height:15px"/>
+          Save consultation as draft if not yet finalized
+        </label>
+        <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer">
+          <input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px"/>
+          Send visit summary to patient via SMS
+        </label>
+        <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer">
+          <input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px"/>
+          Schedule follow-up appointment
+        </label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeEndModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="endCall()">End Call</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toast">
+  <div class="toast">
+    <svg viewBox="0 0 15 15"><path d="M7.5 1.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM5 7.5l2 2 3.5-4"/></svg>
+    <span id="toast-msg">Done</span>
+  </div>
+</div>
+
+<script>
+// Dark mode
+function toggleDark(){ document.documentElement.classList.toggle('dark') }
+
+// Session timer
+let secs = 0
+setInterval(()=>{
+  secs++
+  const m = String(Math.floor(secs/60)).padStart(2,'0')
+  const s = String(secs%60).padStart(2,'0')
+  document.getElementById('session-timer').textContent = m+':'+s
+}, 1000)
+
+// Panel collapse
+let panelOpen = true
+function togglePanel(){
+  panelOpen = !panelOpen
+  document.getElementById('tc-layout').classList.toggle('collapsed', !panelOpen)
+  const svg = document.querySelector('#panel-toggle-btn svg path')
+  svg.setAttribute('d', panelOpen ? 'M7.5 2L4 6l3.5 4' : 'M4.5 2L8 6l-3.5 4')
+}
+
+// Video controls
+const ctrl = {mic: false, cam: true}
+function toggleCtrl(type){
+  ctrl[type] = !ctrl[type]
+  const btn = document.getElementById('btn-'+type)
+  if(type==='mic'){
+    btn.classList.toggle('muted', !ctrl.mic)
+    showToast(ctrl.mic ? 'Microphone on' : 'Microphone muted')
+  } else {
+    btn.classList.toggle('muted', !ctrl.cam)
+    showToast(ctrl.cam ? 'Camera on' : 'Camera off')
+  }
+}
+
+// BMI
+function calcBMI(){
+  const h = parseFloat(document.getElementById('v-height').value)
+  const w = parseFloat(document.getElementById('v-weight').value)
+  const el = document.getElementById('v-bmi')
+  const lbl = document.getElementById('v-bmi-label')
+  if(!h || !w){ el.textContent = '—'; lbl.textContent = ''; return }
+  const bmi = (w / ((h/100)**2)).toFixed(1)
+  el.textContent = bmi
+  const b = parseFloat(bmi)
+  if(b < 18.5){ lbl.textContent = 'Underweight'; lbl.style.color = 'var(--info-text)' }
+  else if(b < 25){ lbl.textContent = 'Normal'; lbl.style.color = 'var(--accent)' }
+  else if(b < 30){ lbl.textContent = 'Overweight'; lbl.style.color = 'var(--warn-text)' }
+  else { lbl.textContent = 'Obese'; lbl.style.color = 'var(--crit-text)' }
+}
+calcBMI()
+
+// Rx
+function toggleRxForm(show){
+  document.getElementById('rx-add-form').style.display = show ? 'flex' : 'none'
+  document.getElementById('rx-add-form').style.flexDirection = 'column'
+  document.getElementById('rx-add-toggle').style.display = show ? 'none' : 'inline-flex'
+  if(show) document.getElementById('rx-name').focus()
+}
+function addRx(){
+  const name = document.getElementById('rx-name').value.trim()
+  if(!name){ showToast('Enter a medication name'); return }
+  const brand = document.getElementById('rx-brand').value.trim()
+  const dose = document.getElementById('rx-dose').value.trim()
+  const freq = document.getElementById('rx-freq').value
+  const dur = document.getElementById('rx-duration').value.trim()
+  const qty = document.getElementById('rx-qty').value
+  const list = document.getElementById('rx-list')
+  const item = document.createElement('div')
+  item.className = 'rx-item'
+  item.innerHTML = `
+    <div class="rx-item-icon"><svg viewBox="0 0 14 14"><path d="M4 1.5h6l2 3H2L4 1.5z"/><rect x="1" y="4.5" width="12" height="8" rx="1.5"/><path d="M5 8h4M7 6.5v3"/></svg></div>
+    <div style="flex:1;min-width:0">
+      <div class="rx-item-name">${name}${brand?' ('+brand+')':''}</div>
+      <div class="rx-item-dose">${dose} · ${freq} · ${dur} · Qty: ${qty}</div>
+    </div>
+    <button class="rx-item-remove" onclick="removeRx(this)" title="Remove">
+      <svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg>
+    </button>`
+  list.appendChild(item)
+  // reset
+  document.getElementById('rx-name').value = ''
+  document.getElementById('rx-brand').value = ''
+  document.getElementById('rx-dose').value = '1 tablet'
+  document.getElementById('rx-qty').value = '30'
+  toggleRxForm(false)
+  showToast(`${name} added to prescription`)
+}
+function removeRx(btn){ btn.closest('.rx-item').remove() }
+
+// Save consultation
+function saveConsultation(){
+  const soap = document.getElementById('soap-notes').value.trim()
+  if(!soap){ showToast('Please complete the SOAP notes'); return }
+  showToast('Consultation saved · Prescription issued')
+  setTimeout(()=>{ window.location.href='emr_updated_2.html' }, 2200)
+}
+
+// End call modal
+function openEndModal(){ document.getElementById('modal-end').classList.add('open') }
+function closeEndModal(){ document.getElementById('modal-end').classList.remove('open') }
+function endCall(){
+  closeEndModal()
+  showToast('Session ended · Draft saved')
+  setTimeout(()=>{ window.location.href='emr_updated_2.html' }, 2000)
+}
+
+// Toast
+let toastT
+function showToast(msg){
+  const tw = document.getElementById('toast')
+  document.getElementById('toast-msg').textContent = msg
+  tw.classList.add('show')
+  clearTimeout(toastT)
+  toastT = setTimeout(()=>tw.classList.remove('show'), 2800)
+}
+</script>
+</body>
+</html>

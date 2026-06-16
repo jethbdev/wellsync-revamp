@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MediStock EMR — Electronic Medical Records</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#6C63FF;
+  --accent-light:#EEEDFE;
+  --accent-mid:#8B85FF;
+  --ink:#1A1A2E;
+  --muted:#6B6B8A;
+  --faint:#9999B3;
+  --surface:#F5F7FB;
+  --white:#FFFFFF;
+  --card-shadow:0 2px 16px rgba(108,99,255,0.07),0 1px 3px rgba(0,0,0,0.04);
+  --card-shadow-hover:0 6px 28px rgba(108,99,255,0.13),0 2px 8px rgba(0,0,0,0.06);
+  --rsm:8px;--rmd:12px;--rlg:18px;--rxl:28px;
+  --warn-bg:#fff8e6;--warn-text:#9a6200;
+  --crit-bg:#fef0f0;--crit-text:#a03030;
+  --info-bg:#eff6ff;--info-text:#1d4ed8;
+  --border-subtle:rgba(108,99,255,0.08);
+  --tr-hover:#FAFAFF;
+  --input-bg:var(--surface);
+  --input-focus-bg:#FFFFFF;
+  --modal-overlay-bg:rgba(26,26,46,.4);
+  --toast-bg:var(--ink);
+
+  --sidebar-shadow:2px 0 16px rgba(108,99,255,0.05);
+}
+
+html.dark{
+  /* Lavender accent — unchanged */
+  --accent:#8880FF;
+  --accent-light:rgba(136,128,255,0.13);
+  --accent-mid:#A09AFF;
+
+  /* Cool slate text — GitHub-style, no warm cast */
+  --ink:#CDD9E5;
+  --muted:#768390;
+  --faint:#444C56;
+
+  /* Cool slate backgrounds — 3 distinct levels */
+  --surface:#0D1117;   /* page bg */
+  --white:#161B22;     /* cards, sidebar, topbar */
+
+  --card-shadow:0 1px 2px rgba(0,0,0,0.5),0 4px 20px rgba(0,0,0,0.45);
+  --card-shadow-hover:0 4px 8px rgba(0,0,0,0.6),0 12px 36px rgba(0,0,0,0.5);
+
+  --warn-bg:rgba(251,191,36,0.1);--warn-text:#E3B341;
+  --crit-bg:rgba(248,113,113,0.1);--crit-text:#FF7B72;
+  --info-bg:rgba(96,165,250,0.1);--info-text:#79C0FF;
+
+  --border-subtle:rgba(255,255,255,0.06);
+  --tr-hover:rgba(255,255,255,0.03);
+
+  --input-bg:#21262D;
+  --input-focus-bg:#2D333B;
+
+  --modal-overlay-bg:rgba(0,0,0,0.7);
+  --toast-bg:#21262D;
+  --sidebar-shadow:2px 0 16px rgba(0,0,0,0.3);
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);line-height:1.5;display:flex;flex-direction:column}
+h1,h2,h3,h4,h5{font-family:'Sora',sans-serif}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:64px;flex-shrink:0;background:var(--white);
+  display:flex;align-items:center;gap:0;padding:0 24px;z-index:50;
+  box-shadow:0 1px 0 var(--border-subtle);
+}
+.tb-logo{display:flex;align-items:center;gap:10px;font-family:'Sora',sans-serif;font-weight:700;font-size:17px;color:var(--ink);text-decoration:none;margin-right:36px;flex-shrink:0}
+.tb-logo-icon{width:32px;height:32px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+.tb-logo-icon svg{width:18px;height:18px;fill:white}
+.tb-search{flex:1;max-width:420px;position:relative}
+.tb-search input{
+  width:100%;border:none;border-radius:var(--rmd);
+  padding:8px 14px 8px 36px;font-size:13px;font-family:'DM Sans',sans-serif;
+  background:var(--surface);color:var(--ink);outline:none;
+  transition:box-shadow .2s,background .2s;
+}
+.tb-search input:focus{box-shadow:0 0 0 2px var(--accent);background:var(--input-focus-bg)}
+.tb-search input::placeholder{color:var(--faint)}
+.tb-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--faint);fill:none;stroke-width:1.8;stroke-linecap:round}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb-icon-btn{
+  width:36px;height:36px;border-radius:var(--rmd);border:none;background:var(--surface);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background .15s,box-shadow .15s;position:relative;
+}
+.tb-icon-btn:hover{background:var(--accent-light);box-shadow:none}
+.tb-icon-btn svg{width:17px;height:17px;stroke:var(--muted);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tb-badge{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:#f59e0b;border:2px solid white}
+.tb-divider{width:1px;height:24px;background:rgba(108,99,255,0.12);margin:0 4px}
+.tb-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:white;cursor:pointer;flex-shrink:0}
+.tb-user{display:flex;flex-direction:column;line-height:1.25}
+.tb-user-name{font-size:13px;font-weight:600;color:var(--ink)}
+.tb-user-role{font-size:11px;color:var(--muted)}
+
+/* ── LAYOUT ── */
+.app-body{flex:1;display:flex;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:220px;flex-shrink:0;background:var(--white);
+  display:flex;flex-direction:column;padding:20px 12px;overflow-y:auto;
+  box-shadow:var(--sidebar-shadow);
+}
+.sb-section{
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint);padding:16px 10px 6px;margin-top:2px;
+}
+.sb-section:first-child{padding-top:6px}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:12px;font-size:13px;color:var(--muted);cursor:pointer;
+  transition:background .15s,color .15s;user-select:none;
+  position:relative;margin-bottom:2px;font-weight:500;
+}
+.sb-item:hover{background:var(--accent-light);color:var(--accent)}
+.sb-item.active{background:var(--accent-light);color:var(--accent);font-weight:600}
+
+.sb-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.sb-badge{margin-left:auto;background:var(--accent);color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;min-width:18px;text-align:center}
+.sb-badge.warn{background:#f59e0b}
+.sb-badge.crit{background:#e03030}
+.sb-footer{margin-top:auto;padding-top:16px}
+
+/* ── CONTENT ── */
+.content{flex:1;overflow:hidden;position:relative}
+.panel{position:absolute;inset:0;overflow-y:auto;opacity:0;transform:translateX(12px);transition:opacity .3s cubic-bezier(.22,1,.36,1),transform .3s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.panel.active{opacity:1;transform:translateX(0);pointer-events:auto}
+.panel-inner{padding:28px 32px;min-height:100%}
+
+/* panel head */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;gap:16px}
+.ph-left h2{font-size:22px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.ph-left p{font-size:13px;color:var(--muted)}
+.ph-actions{display:flex;gap:8px;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:'Sora',sans-serif}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{background:var(--accent-mid);transform:translateY(-1px);box-shadow:0 4px 16px rgba(108,99,255,.35)}
+.btn-outline{background:var(--white);color:var(--ink);box-shadow:var(--card-shadow)}
+.btn-outline:hover{background:var(--accent-light);color:var(--accent);box-shadow:none}
+.btn-ghost{background:transparent;color:var(--muted);padding:8px 12px}
+.btn-ghost:hover{background:var(--surface);color:var(--ink)}
+
+/* stat cards — no border, shadow only */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:var(--white);border-radius:var(--rlg);padding:18px 20px;box-shadow:var(--card-shadow);transition:transform .2s,box-shadow .2s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--card-shadow-hover)}
+.stat-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.stat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.stat-icon svg{width:17px;height:17px;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stat-icon.green{background:var(--accent-light)}.stat-icon.green svg{stroke:var(--accent);fill:none}
+.stat-icon.yellow{background:var(--warn-bg)}.stat-icon.yellow svg{stroke:var(--warn-text);fill:none}
+.stat-icon.red{background:var(--crit-bg)}.stat-icon.red svg{stroke:var(--crit-text);fill:none}
+.stat-icon.blue{background:var(--info-bg)}.stat-icon.blue svg{stroke:var(--info-text);fill:none}
+.stat-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stat-val{font-family:'Sora',sans-serif;font-size:28px;font-weight:700;line-height:1;color:var(--ink);margin-bottom:6px}
+.stat-chg{font-size:12px;color:var(--accent)}
+.stat-chg.warn{color:var(--warn-text)}.stat-chg.crit{color:var(--crit-text)}
+
+/* pills */
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pill.ok{background:var(--accent-light);color:var(--accent)}
+.pill.warn{background:var(--warn-bg);color:var(--warn-text)}
+.pill.crit{background:var(--crit-bg);color:var(--crit-text)}
+.pill.info{background:var(--info-bg);color:var(--info-text)}
+.pill.new{background:#f3f0ff;color:#5b21b6}
+.pill.neutral{background:var(--surface);color:var(--muted)}
+
+/* tables — card: no border */
+.tbl-wrap{background:var(--white);border-radius:var(--rlg);box-shadow:var(--card-shadow);overflow:hidden}
+.tbl-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-subtle)}
+.tbl-title{font-size:14px;font-weight:700;color:var(--ink)}
+.tbl-filters{display:flex;gap:8px}
+.tbl-search{display:flex;align-items:center;gap:6px;background:var(--surface);border-radius:var(--rsm);padding:6px 12px;font-size:12px;color:var(--muted);cursor:text}
+.tbl-search svg{width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:1.8;flex-shrink:0}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 18px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--border-subtle);background:var(--surface)}
+td{padding:12px 18px;font-size:13px;color:var(--ink);border-bottom:1px solid var(--border-subtle);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr{transition:background .12s}
+tr:hover td{background:var(--tr-hover)}
+.td-bold{font-weight:600;color:var(--ink)}
+.td-muted{color:var(--muted)}
+.td-actions{display:flex;gap:4px}
+.td-btn{width:28px;height:28px;border-radius:7px;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .12s}
+.td-btn:hover{background:var(--accent-light)}
+.td-btn svg{width:13px;height:13px;stroke:var(--muted);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.td-btn:hover svg{stroke:var(--accent)}
+
+/* avatar */
+.pt-avatar{width:28px;height:28px;border-radius:50%;font-family:'Sora',sans-serif;font-size:10px;font-weight:700;color:white;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--accent)}
+
+/* cards row — no border */
+.card-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.card{background:var(--white);border-radius:var(--rlg);box-shadow:var(--card-shadow);overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:700;color:var(--ink)}
+.card-body{padding:18px 20px}
+
+/* mini chart */
+.mini-bars{display:flex;align-items:flex-end;gap:5px;height:60px}
+.mini-bar{flex:1;border-radius:4px 4px 0 0;background:var(--accent-light);transition:opacity .15s}
+.mini-bar.hi{background:var(--accent)}
+.mini-bar:hover{opacity:.75}
+.chart-labels{display:flex;justify-content:space-between;margin-top:6px}
+.chart-label{font-size:10px;color:var(--faint)}
+
+/* activity feed */
+.activity-item{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-subtle)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.activity-dot.ok{background:var(--accent)}
+.activity-dot.warn{background:#f59e0b}
+.activity-dot.crit{background:#e03030}
+.activity-body{flex:1}
+.activity-text{font-size:13px;color:var(--ink);line-height:1.45}
+.activity-time{font-size:11px;color:var(--faint);margin-top:2px}
+
+/* ── PATIENT DETAIL ── */
+.patient-layout{display:grid;grid-template-columns:296px 1fr;gap:18px}
+.patient-card{background:var(--white);border-radius:var(--rlg);box-shadow:var(--card-shadow);padding:22px}
+.patient-avatar-lg{width:60px;height:60px;border-radius:50%;font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:white;display:flex;align-items:center;justify-content:center;margin-bottom:14px;background:var(--accent)}
+.patient-name{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.patient-id{font-size:12px;color:var(--muted);margin-bottom:16px}
+.patient-meta{display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--border-subtle);padding-top:16px}
+.patient-meta-row{display:flex;justify-content:space-between;font-size:12px}
+.patient-meta-label{color:var(--muted)}
+.patient-meta-value{color:var(--ink);font-weight:500;text-align:right}
+.vitals-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.vital-card{background:var(--surface);border-radius:10px;padding:12px 14px}
+.vital-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:3px}
+.vital-val{font-family:'Sora',sans-serif;font-size:19px;font-weight:700;color:var(--ink)}
+.vital-unit{font-size:11px;color:var(--muted);font-weight:400}
+.vital-status{font-size:10px;margin-top:2px}
+.vital-status.ok{color:var(--accent)}
+.vital-status.warn{color:var(--warn-text)}
+
+/* tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border-subtle);margin-bottom:18px}
+.tab{padding:10px 16px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;margin-bottom:-1px}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tab:hover:not(.active){color:var(--ink)}
+
+/* timeline */
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:14px;position:relative}
+.tl-item::before{content:'';position:absolute;left:15px;top:30px;bottom:-16px;width:1px;background:var(--border-subtle)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:30px;height:30px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1}
+.tl-dot svg{width:13px;height:13px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tl-body{flex:1;padding-bottom:26px}
+.tl-date{font-size:11px;color:var(--faint);margin-bottom:4px}
+.tl-title{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.tl-detail{font-size:13px;color:var(--muted);line-height:1.55}
+.tl-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+
+/* prescription rows */
+.rx-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-subtle)}
+.rx-row:last-child{border-bottom:none}
+.rx-icon{width:34px;height:34px;border-radius:9px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rx-icon svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rx-drug{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.rx-dose{font-size:12px;color:var(--muted)}
+.rx-right{margin-left:auto;text-align:right}
+.rx-qty{font-size:13px;font-weight:600;color:var(--ink)}
+.rx-refills{font-size:11px;color:var(--muted)}
+
+/* alert panel */
+.alert-card{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:12px;background:var(--surface);transition:transform .15s,box-shadow .15s;margin-bottom:8px;cursor:pointer}
+.alert-card:hover{transform:translateX(4px);box-shadow:var(--card-shadow)}
+.alert-card.crit{background:var(--crit-bg)}
+.alert-card.warn{background:var(--warn-bg)}
+.alert-card.ok{background:var(--accent-light)}
+.al-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.al-icon svg{width:14px;height:14px;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.al-icon.crit{background:rgba(224,48,48,.12)}.al-icon.crit svg{stroke:#e03030}
+.al-icon.warn{background:rgba(245,158,11,.12)}.al-icon.warn svg{stroke:#f59e0b}
+.al-icon.ok{background:rgba(108,99,255,.12)}.al-icon.ok svg{stroke:var(--accent)}
+.al-body{flex:1}
+.al-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.al-sub{font-size:12px;color:var(--muted);line-height:1.45}
+.al-time{font-size:11px;color:var(--faint);flex-shrink:0;margin-top:2px}
+.al-dismiss{width:24px;height:24px;border-radius:5px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s,background .15s;flex-shrink:0}
+.alert-card:hover .al-dismiss{opacity:1}
+.al-dismiss:hover{background:rgba(0,0,0,.07)}
+.al-dismiss svg{width:11px;height:11px;stroke:var(--muted);fill:none;stroke-width:2.5}
+
+/* form — no border on wrap */
+.form-wrap{background:var(--white);border-radius:var(--rlg);box-shadow:var(--card-shadow);padding:22px}
+.form-section{margin-bottom:22px}
+.form-section-title{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-bottom:14px;padding-bottom:9px;border-bottom:1px solid var(--border-subtle)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr}
+.form-grid.full{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:600;color:var(--muted)}
+.field input,.field select,.field textarea{
+  border:none;border-radius:var(--rsm);
+  padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;
+  color:var(--ink);background:var(--input-bg);outline:none;
+  transition:box-shadow .2s,background .2s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{box-shadow:0 0 0 2px var(--accent);background:var(--input-focus-bg)}
+.field textarea{resize:vertical;min-height:80px}
+.field select{appearance:none;cursor:pointer}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:18px;border-top:1px solid var(--border-subtle)}
+
+/* schedule */
+.schedule-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.sched-day{background:var(--white);border-radius:var(--rmd);box-shadow:var(--card-shadow);padding:12px 10px;min-height:130px}
+.sched-day-name{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:10px;text-align:center}
+.sched-day.today{box-shadow:0 0 0 2px var(--accent),var(--card-shadow)}
+.sched-day.today .sched-day-name{color:var(--accent)}
+.appt{border-radius:7px;padding:6px 8px;margin-bottom:5px;font-size:11px;cursor:pointer;transition:opacity .15s}
+.appt:hover{opacity:.8}
+.appt.green{background:var(--accent-light);border-left:2px solid var(--accent)}
+.appt.yellow{background:var(--warn-bg);border-left:2px solid #f59e0b}
+.appt.blue{background:var(--info-bg);border-left:2px solid #60a5fa}
+.appt.purple{background:#f3f0ff;border-left:2px solid #a78bfa}
+.appt-time{font-size:10px;color:var(--muted)}
+.appt-name{font-weight:600;color:var(--ink);margin-top:2px}
+
+/* toast */
+.toast-wrap{
+  position:fixed;bottom:24px;right:24px;
+  border-radius:var(--rmd);overflow:hidden;
+  transform:translateY(20px);opacity:0;
+  transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s;
+  pointer-events:none;z-index:200;
+  box-shadow:0 8px 32px rgba(0,0,0,.25);
+  background:var(--toast-bg);
+}
+html:not(.dark) .toast-wrap{background:#1A1A2E}
+.toast-wrap.show{transform:translateY(0);opacity:1}
+.toast{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 20px;
+  font-size:14px;font-weight:500;
+  background:transparent;color:var(--ink);
+}
+html:not(.dark) .toast{color:white}
+.toast svg{width:15px;height:15px;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;stroke:#fff}
+
+/* modal overlay */
+.modal-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--white);border-radius:var(--rxl);width:540px;max-width:92vw;max-height:86vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.35);transform:scale(.97) translateY(8px);transition:transform .3s cubic-bezier(.22,1,.36,1)}
+.modal-overlay.open .modal{transform:scale(1) translateY(0)}
+.modal-top{padding:22px 26px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:17px;font-weight:700;color:var(--ink)}
+.modal-close{width:32px;height:32px;border-radius:7px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.modal-close:hover{background:var(--surface)}
+.modal-close svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round}
+.modal-body{padding:22px 26px}
+
+/* dark mode transition */
+html,body,
+.topbar,.sidebar,.content,.panel,
+.stat-card,.card,.tbl-wrap,.patient-card,.form-wrap,.vital-card,.sched-day,
+.alert-card,.modal,
+.tb-icon-btn,.sb-item,.btn,.td-btn,
+input,select,textarea,
+th,td{
+  transition-property:background,background-color,border-color,color,box-shadow;
+  transition-duration:.2s;
+  transition-timing-function:ease;
+}
+.panel{transition:opacity .3s cubic-bezier(.22,1,.36,1),transform .3s cubic-bezier(.22,1,.36,1)!important}
+.alert-card{transition:background .2s,border-color .2s,box-shadow .2s,transform .15s!important}
+.toast{transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s!important}
+
+html.dark .pill.new{background:rgba(124,116,255,0.2);color:#c4b5fd}
+html.dark .pill.neutral{background:rgba(255,255,255,0.07);color:var(--muted)}
+html.dark .pill.ok{background:rgba(124,116,255,0.18);color:#a5b4fc}
+html.dark .appt.purple{background:rgba(124,116,255,0.15);border-left-color:#a78bfa}
+html.dark .tb-badge{border-color:var(--white)}
+html.dark .al-dismiss:hover{background:rgba(255,255,255,.08)}
+html.dark select option{background:#252535;color:var(--ink)}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(108,99,255,0.2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(108,99,255,0.4)}
+html.dark ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12)}
+html.dark ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.22)}
+
+/* responsive */
+@media(max-width:900px){
+  .sidebar{width:52px;overflow:visible}
+  .sb-item span,.sb-badge,.sb-section,.tb-user,.sb-footer{display:none}
+  .sb-item{justify-content:center;padding:10px}
+  .sidebar:hover{width:220px;z-index:60;box-shadow:4px 0 24px rgba(108,99,255,.12)}
+  .sidebar:hover .sb-item span,.sidebar:hover .sb-badge,.sidebar:hover .sb-section,.sidebar:hover .sb-footer,.sidebar:hover .sb-item{display:flex}
+  .sidebar:hover .sb-item{justify-content:flex-start}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .patient-layout{grid-template-columns:1fr}
+  .schedule-grid{grid-template-columns:1fr 1fr}
+  .card-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="#" class="tb-logo">
+    <div class="tb-logo-icon"><svg viewBox="0 0 20 20"><path d="M10 2a1 1 0 0 1 1 1v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V3a1 1 0 0 1 1-1zm0 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg></div>
+    MediStock EMR
+  </a>
+  <div class="tb-search">
+    <svg class="tb-search-icon" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M10.5 10.5l3 3"/></svg>
+    <input type="text" placeholder="Search patients, records, prescriptions…" id="globalSearch"/>
+  </div>
+  <div class="tb-right">
+    <button class="tb-icon-btn" title="Notifications" onclick="switchPanel('alerts')">
+      <svg viewBox="0 0 16 16"><path d="M8 1.5v.8a5 5 0 0 1 4 4.9v2.3l1 2H3l1-2V7.2A5 5 0 0 1 8 2.3V1.5z"/><path d="M6.5 12.5a1.5 1.5 0 0 0 3 0"/></svg>
+      <span class="tb-badge"></span>
+    </button>
+    <button class="tb-icon-btn" title="Settings">
+      <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.2 3.2l.85.85M11.95 11.95l.85.85M3.2 12.8l.85-.85M11.95 4.05l.85-.85"/></svg>
+    </button>
+    <button class="tb-icon-btn" id="theme-toggle" title="Toggle dark mode" onclick="toggleDark()">
+      <svg id="theme-icon-moon" viewBox="0 0 16 16" style="display:block"><path d="M13.5 10.5A6 6 0 0 1 5.5 2.5a6 6 0 1 0 8 8z"/></svg>
+      <svg id="theme-icon-sun" viewBox="0 0 16 16" style="display:none"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7"/></svg>
+    </button>
+    <div class="tb-divider"></div>
+    <div class="tb-avatar" title="Dr. Maria Santos">MS</div>
+    <div class="tb-user">
+      <div class="tb-user-name">Dr. Maria Santos</div>
+      <div class="tb-user-role">Internal Medicine</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP BODY -->
+<div class="app-body">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <span class="sb-section">Main</span>
+    <div class="sb-item active" onclick="switchPanel('dashboard')" id="sb-dashboard">
+      <svg viewBox="0 0 15 15"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="8.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="8.5" width="5" height="5" rx="1"/><rect x="8.5" y="8.5" width="5" height="5" rx="1"/></svg>
+      <span>Dashboard</span>
+    </div>
+    <div class="sb-item" onclick="switchPanel('patients')" id="sb-patients">
+      <svg viewBox="0 0 15 15"><circle cx="7.5" cy="5" r="3"/><path d="M1 14c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/></svg>
+      <span>Patients</span>
+      <span class="sb-badge">147</span>
+    </div>
+    <div class="sb-item" onclick="switchPanel('schedule')" id="sb-schedule">
+      <svg viewBox="0 0 15 15"><rect x="1.5" y="2.5" width="12" height="11" rx="2"/><path d="M5 1.5v2M10 1.5v2M1.5 6.5h12"/></svg>
+      <span>Schedule</span>
+    </div>
+    <div class="sb-item" onclick="switchPanel('alerts')" id="sb-alerts">
+      <svg viewBox="0 0 15 15"><path d="M7.5 1.5v.8a5 5 0 0 1 4 4.9v2.3l1 2H3l1-2V7.2a5 5 0 0 1 4-4.9V1.5z"/><path d="M6 12.5a1.5 1.5 0 0 0 3 0"/></svg>
+      <span>Alerts</span>
+      <span class="sb-badge warn">5</span>
+    </div>
+
+    <span class="sb-section">Clinical</span>
+    <div class="sb-item" onclick="switchPanel('records')" id="sb-records">
+      <svg viewBox="0 0 15 15"><rect x="2" y="1.5" width="11" height="12" rx="2"/><path d="M5 5.5h5M5 8h5M5 10.5h3"/></svg>
+      <span>Medical Records</span>
+    </div>
+    <div class="sb-item" onclick="switchPanel('prescriptions')" id="sb-prescriptions">
+      <svg viewBox="0 0 15 15"><path d="M5 2h5l2 3H3L5 2z"/><rect x="2" y="5" width="11" height="8" rx="1.5"/><path d="M5 8.5h5M7.5 7v3"/></svg>
+      <span>Prescriptions</span>
+    </div>
+    <div class="sb-item" onclick="switchPanel('labs')" id="sb-labs">
+      <svg viewBox="0 0 15 15"><path d="M5.5 1.5v5.5L2 12.5a1 1 0 0 0 .9 1.5h9.2a1 1 0 0 0 .9-1.5L9.5 7V1.5"/><path d="M4.5 1.5h6"/></svg>
+      <span>Lab Results</span>
+      <span class="sb-badge crit">2</span>
+    </div>
+    <div class="sb-item" onclick="switchPanel('newvisit')" id="sb-newvisit">
+      <svg viewBox="0 0 15 15"><rect x="1.5" y="1.5" width="12" height="12" rx="2"/><path d="M7.5 4.5v6M4.5 7.5h6"/></svg>
+      <span>New Visit</span>
+    </div>
+
+    <span class="sb-section">Reports</span>
+    <div class="sb-item" id="sb-reports">
+      <svg viewBox="0 0 15 15"><rect x="1.5" y="3" width="12" height="10" rx="2"/><path d="M4 7h2M4 9.5h7M8 7h3"/></svg>
+      <span>Reports</span>
+    </div>
+
+    <div class="sb-footer">
+      <div class="sb-item" id="sb-help">
+        <svg viewBox="0 0 15 15"><circle cx="7.5" cy="7.5" r="6"/><path d="M5.8 5.5a2 2 0 0 1 3.9.7c0 1.3-1.4 1.8-1.9 2.3M7.5 10.5v.5"/></svg>
+        <span>Help & Support</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ─── DASHBOARD ─── -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="panel-inner">
+        <div class="ph">
+          <div class="ph-left">
+            <h2>Good morning, Dr. Santos 👋</h2>
+            <p>Sunday, June 14, 2026 · Internal Medicine Ward</p>
+          </div>
+          <div class="ph-actions">
+            <button class="btn btn-ghost" onclick="cycleToast()" title="Preview toast notifications" style="gap:6px">
+              <svg viewBox="0 0 13 13" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><rect x="1" y="7" width="11" height="4.5" rx="1.5"/><path d="M4 7V4a2.5 2.5 0 0 1 5 0v3"/></svg>
+              Toast
+            </button>
+            <button class="btn btn-outline" onclick="switchPanel('schedule')">
+              <svg viewBox="0 0 13 13"><rect x="1" y="2" width="11" height="10" rx="1.5"/><path d="M4 1v2M9 1v2M1 5h11"/></svg>
+              View Schedule
+            </button>
+            <button class="btn btn-primary" onclick="openModal()">
+              <svg viewBox="0 0 13 13"><circle cx="6.5" cy="5" r="2.5"/><path d="M1 12c0-3 2.5-5 5.5-5"/><path d="M9.5 9.5h3M11 8v3"/></svg>
+              New Patient
+            </button>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <div class="stat-lbl">Patients Today</div>
+              <div class="stat-icon green"><svg viewBox="0 0 15 15"><circle cx="7.5" cy="5" r="3"/><path d="M1 14c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/></svg></div>
+            </div>
+            <div class="stat-val" id="d-patients">0</div>
+            <div class="stat-chg">↑ 3 from yesterday</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <div class="stat-lbl">Pending Labs</div>
+              <div class="stat-icon yellow"><svg viewBox="0 0 15 15"><path d="M5.5 1.5v5.5L2 12.5a1 1 0 0 0 .9 1.5h9.2a1 1 0 0 0 .9-1.5L9.5 7V1.5"/><path d="M4.5 1.5h6"/></svg></div>
+            </div>
+            <div class="stat-val" style="color:var(--warn-text)" id="d-labs">0</div>
+            <div class="stat-chg warn">2 critical</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <div class="stat-lbl">Pending Rx</div>
+              <div class="stat-icon green"><svg viewBox="0 0 15 15"><path d="M5 2h5l2 3H3L5 2z"/><rect x="2" y="5" width="11" height="8" rx="1.5"/><path d="M5 9h5M7.5 7.5v3"/></svg></div>
+            </div>
+            <div class="stat-val" id="d-rx">0</div>
+            <div class="stat-chg">↓ 2 from avg</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <div class="stat-lbl">Upcoming Appts</div>
+              <div class="stat-icon blue"><svg viewBox="0 0 15 15"><rect x="1.5" y="2.5" width="12" height="11" rx="2"/><path d="M5 1.5v2M10 1.5v2M1.5 6.5h12"/></svg></div>
+            </div>
+            <div class="stat-val" id="d-appts">0</div>
+            <div class="stat-chg">Next: 9:00 AM</div>
+          </div>
+        </div>
+
+        <div class="card-row">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Patient Visits — Last 7 Days</span>
+              <span class="pill ok">This Week</span>
+            </div>
+            <div class="card-body">
+              <div class="mini-bars" id="visit-chart"></div>
+              <div class="chart-labels">
+                <span class="chart-label">Mon</span><span class="chart-label">Tue</span>
+                <span class="chart-label">Wed</span><span class="chart-label">Thu</span>
+                <span class="chart-label">Fri</span><span class="chart-label">Sat</span>
+                <span class="chart-label">Sun</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Today's Activity</span>
+              <button class="btn btn-ghost" style="padding:4px 8px;font-size:11px">View all</button>
+            </div>
+            <div class="card-body" style="padding-top:4px">
+              <div class="activity-item">
+                <div class="activity-dot ok"></div>
+                <div class="activity-body">
+                  <div class="activity-text">Lab results received for <strong>Juan Dela Cruz</strong> — CBC normal</div>
+                  <div class="activity-time">8 minutes ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot warn"></div>
+                <div class="activity-body">
+                  <div class="activity-text">Rx renewed for <strong>Maria Reyes</strong> — Losartan 50mg ×30</div>
+                  <div class="activity-time">24 minutes ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot crit"></div>
+                <div class="activity-body">
+                  <div class="activity-text">Critical potassium level flagged — <strong>Roberto Cruz</strong></div>
+                  <div class="activity-time">1 hour ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot ok"></div>
+                <div class="activity-body">
+                  <div class="activity-text">New patient registered: <strong>Ana Villanueva</strong></div>
+                  <div class="activity-time">2 hours ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <div class="tbl-head">
+            <span class="tbl-title">Today's Appointments</span>
+            <div class="tbl-filters">
+              <div class="tbl-search"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M10.5 10.5l3 3"/></svg> Filter appointments</div>
+              <button class="btn btn-outline" style="padding:5px 12px;font-size:11px" onclick="switchPanel('schedule')">Full schedule</button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Time</th><th>Patient</th><th>Visit Type</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="td-bold">9:00 AM</td>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:var(--accent)">JD</div><div><div class="td-bold">Juan Dela Cruz</div><div class="td-muted">MRN-0034812</div></div></div></td>
+                <td><span class="pill ok">Follow-up</span></td>
+                <td class="td-muted">Hypertension management</td>
+                <td><span class="pill info">Checked in</span></td>
+                <td><div class="td-actions"><div class="td-btn" onclick="switchPanel('records')" title="Open chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div><div class="td-btn" title="Prescribe"><svg viewBox="0 0 12 12"><path d="M4 1.5h4l1.5 2.5h-7L4 1.5z"/><rect x="1.5" y="4" width="9" height="6.5" rx="1"/><path d="M4 7h4M6 6v2"/></svg></div></div></td>
+              </tr>
+              <tr>
+                <td class="td-bold">9:30 AM</td>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#534AB7">MR</div><div><div class="td-bold">Maria Reyes</div><div class="td-muted">MRN-0041207</div></div></div></td>
+                <td><span class="pill ok">Follow-up</span></td>
+                <td class="td-muted">Diabetes type 2 check-up</td>
+                <td><span class="pill neutral">Waiting</span></td>
+                <td><div class="td-actions"><div class="td-btn" title="Open chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div><div class="td-btn" title="Prescribe"><svg viewBox="0 0 12 12"><path d="M4 1.5h4l1.5 2.5h-7L4 1.5z"/><rect x="1.5" y="4" width="9" height="6.5" rx="1"/><path d="M4 7h4M6 6v2"/></svg></div></div></td>
+              </tr>
+              <tr>
+                <td class="td-bold">10:15 AM</td>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#8B85FF">RC</div><div><div class="td-bold">Roberto Cruz</div><div class="td-muted">MRN-0028994</div></div></div></td>
+                <td><span class="pill warn">Urgent</span></td>
+                <td class="td-muted">Chest pain, shortness of breath</td>
+                <td><span class="pill crit">In room</span></td>
+                <td><div class="td-actions"><div class="td-btn" title="Open chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div><div class="td-btn" title="Prescribe"><svg viewBox="0 0 12 12"><path d="M4 1.5h4l1.5 2.5h-7L4 1.5z"/><rect x="1.5" y="4" width="9" height="6.5" rx="1"/><path d="M4 7h4M6 6v2"/></svg></div></div></td>
+              </tr>
+              <tr>
+                <td class="td-bold">11:00 AM</td>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#a78bfa">AV</div><div><div class="td-bold">Ana Villanueva</div><div class="td-muted">MRN-0052301</div></div></div></td>
+                <td><span class="pill new">New Patient</span></td>
+                <td class="td-muted">Initial consultation</td>
+                <td><span class="pill neutral">Scheduled</span></td>
+                <td><div class="td-actions"><div class="td-btn" title="Open chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div><div class="td-btn" title="Prescribe"><svg viewBox="0 0 12 12"><path d="M4 1.5h4l1.5 2.5h-7L4 1.5z"/><rect x="1.5" y="4" width="9" height="6.5" rx="1"/><path d="M4 7h4M6 6v2"/></svg></div></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PATIENTS ─── -->
+    <div class="panel" id="panel-patients">
+      <div class="panel-inner">
+        <div class="ph">
+          <div class="ph-left"><h2>Patients</h2><p>147 active patients under your care</p></div>
+          <div class="ph-actions">
+            <button class="btn btn-outline"><svg viewBox="0 0 13 13"><path d="M2 9.5L9.5 2l2 2L4 11.5l-2.5.5.5-2.5z"/></svg>Import</button>
+            <button class="btn btn-primary" onclick="openModal()">
+              <svg viewBox="0 0 13 13"><circle cx="6.5" cy="5" r="2.5"/><path d="M1 12c0-3 2.5-5 5.5-5"/><path d="M9.5 9.5h3M11 8v3"/></svg>
+              Register Patient
+            </button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <div class="tbl-head">
+            <span class="tbl-title">All Patients</span>
+            <div class="tbl-filters">
+              <div class="tbl-search"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M10.5 10.5l3 3"/></svg> Search patients…</div>
+              <select style="border:1.5px solid var(--border);border-radius:var(--rsm);padding:5px 10px;font-size:11px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--muted);outline:none">
+                <option>All conditions</option><option>Hypertension</option><option>Diabetes</option><option>Asthma</option>
+              </select>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Patient</th><th>Age / Sex</th><th>Primary Condition</th><th>Last Visit</th><th>Next Appointment</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:var(--accent)">JD</div><div><div class="td-bold">Juan Dela Cruz</div><div class="td-muted">MRN-0034812</div></div></div></td><td>47M</td><td>Hypertension, Stage 2</td><td class="td-muted">Jun 01, 2026</td><td>Jun 14, 2026</td><td><span class="pill ok">Active</span></td><td><div class="td-actions"><div class="td-btn" onclick="switchPanel('records')" title="View chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div></div></td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#534AB7">MR</div><div><div class="td-bold">Maria Reyes</div><div class="td-muted">MRN-0041207</div></div></div></td><td>61F</td><td>Diabetes Type 2</td><td class="td-muted">May 28, 2026</td><td>Jun 14, 2026</td><td><span class="pill ok">Active</span></td><td><div class="td-actions"><div class="td-btn" onclick="switchPanel('records')" title="View chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div></div></td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#8B85FF">RC</div><div><div class="td-bold">Roberto Cruz</div><div class="td-muted">MRN-0028994</div></div></div></td><td>55M</td><td>Coronary Artery Disease</td><td class="td-muted">Jun 10, 2026</td><td>Jun 14, 2026</td><td><span class="pill warn">Monitoring</span></td><td><div class="td-actions"><div class="td-btn" onclick="switchPanel('records')" title="View chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div></div></td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#a78bfa">AV</div><div><div class="td-bold">Ana Villanueva</div><div class="td-muted">MRN-0052301</div></div></div></td><td>34F</td><td>Anxiety, Insomnia</td><td class="td-muted">—</td><td>Jun 14, 2026</td><td><span class="pill new">New</span></td><td><div class="td-actions"><div class="td-btn" onclick="switchPanel('records')" title="View chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div></div></td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:var(--accent)">CL</div><div><div class="td-bold">Carlos Lim</div><div class="td-muted">MRN-0039102</div></div></div></td><td>70M</td><td>COPD, Hypertension</td><td class="td-muted">May 15, 2026</td><td>Jul 02, 2026</td><td><span class="pill ok">Active</span></td><td><div class="td-actions"><div class="td-btn" onclick="switchPanel('records')" title="View chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div></div></td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#534AB7">ES</div><div><div class="td-bold">Elena Santos</div><div class="td-muted">MRN-0047805</div></div></div></td><td>29F</td><td>Hypothyroidism</td><td class="td-muted">Jun 05, 2026</td><td>Sep 05, 2026</td><td><span class="pill ok">Active</span></td><td><div class="td-actions"><div class="td-btn" onclick="switchPanel('records')" title="View chart"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5M3.5 8.5h3"/></svg></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MEDICAL RECORDS (Patient Chart) ─── -->
+    <div class="panel" id="panel-records">
+      <div class="panel-inner">
+        <div class="ph">
+          <div class="ph-left">
+            <h2>Juan Dela Cruz</h2>
+            <p>MRN-0034812 · 47 years old, Male · Blood type: O+</p>
+          </div>
+          <div class="ph-actions">
+            <button class="btn btn-outline" onclick="switchPanel('prescriptions')">
+              <svg viewBox="0 0 13 13"><path d="M4 1.5h5l1.5 2.5h-7L4 1.5z"/><rect x="1.5" y="4" width="10" height="7.5" rx="1"/></svg>
+              New Rx
+            </button>
+            <button class="btn btn-primary" onclick="switchPanel('newvisit')">
+              <svg viewBox="0 0 13 13"><rect x="1.5" y="1.5" width="10" height="10" rx="1.5"/><path d="M6.5 4.5v4M4.5 6.5h4"/></svg>
+              Start Visit
+            </button>
+          </div>
+        </div>
+        <div class="patient-layout">
+          <div>
+            <div class="patient-card" style="margin-bottom:12px">
+              <div class="patient-avatar-lg" style="background:var(--accent)">JD</div>
+              <div class="patient-name">Juan Dela Cruz</div>
+              <div class="patient-id">MRN-0034812</div>
+              <div style="display:flex;gap:6px;margin-bottom:14px">
+                <span class="pill ok">Active</span>
+                <span class="pill warn">Hypertension</span>
+              </div>
+              <div class="patient-meta">
+                <div class="patient-meta-row"><span class="patient-meta-label">Date of Birth</span><span class="patient-meta-value">Mar 15, 1978</span></div>
+                <div class="patient-meta-row"><span class="patient-meta-label">Age</span><span class="patient-meta-value">47 years</span></div>
+                <div class="patient-meta-row"><span class="patient-meta-label">Sex</span><span class="patient-meta-value">Male</span></div>
+                <div class="patient-meta-row"><span class="patient-meta-label">Blood Type</span><span class="patient-meta-value">O+</span></div>
+                <div class="patient-meta-row"><span class="patient-meta-label">Phone</span><span class="patient-meta-value">+63 917 555 0191</span></div>
+                <div class="patient-meta-row"><span class="patient-meta-label">Physician</span><span class="patient-meta-value">Dr. M. Santos</span></div>
+                <div class="patient-meta-row"><span class="patient-meta-label">Allergies</span><span class="patient-meta-value" style="color:var(--crit-text)">Penicillin</span></div>
+              </div>
+            </div>
+            <div class="patient-card">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Latest Vitals</div>
+              <div class="vitals-grid">
+                <div class="vital-card"><div class="vital-label">BP</div><div class="vital-val">142<span class="vital-unit">/88</span></div><div class="vital-status warn">Elevated</div></div>
+                <div class="vital-card"><div class="vital-label">HR</div><div class="vital-val">78<span class="vital-unit"> bpm</span></div><div class="vital-status ok">Normal</div></div>
+                <div class="vital-card"><div class="vital-label">Temp</div><div class="vital-val">36.8<span class="vital-unit">°C</span></div><div class="vital-status ok">Normal</div></div>
+                <div class="vital-card"><div class="vital-label">SpO2</div><div class="vital-val">98<span class="vital-unit">%</span></div><div class="vital-status ok">Normal</div></div>
+                <div class="vital-card"><div class="vital-label">Weight</div><div class="vital-val">82<span class="vital-unit"> kg</span></div><div class="vital-status warn">Overweight</div></div>
+                <div class="vital-card"><div class="vital-label">RR</div><div class="vital-val">16<span class="vital-unit">/min</span></div><div class="vital-status ok">Normal</div></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="tabs" id="chart-tabs">
+              <div class="tab active" onclick="chartTab(this,'ct-visits')">Visit History</div>
+              <div class="tab" onclick="chartTab(this,'ct-rx')">Prescriptions</div>
+              <div class="tab" onclick="chartTab(this,'ct-labs')">Lab Results</div>
+              <div class="tab" onclick="chartTab(this,'ct-notes')">SOAP Notes</div>
+            </div>
+
+            <!-- Visit History -->
+            <div id="ct-visits" class="chart-tab-content">
+              <div class="timeline">
+                <div class="tl-item"><div class="tl-dot"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1.5"/><path d="M3.5 4.5h5M3.5 6.5h5"/></svg></div><div class="tl-body"><div class="tl-date">Jun 01, 2026 — Follow-up</div><div class="tl-title">Hypertension Management</div><div class="tl-detail">BP still elevated at 142/88. Discussed medication adherence and dietary sodium restriction. Weight up 2kg since last visit. Referred for 24h ambulatory BP monitoring.</div><div class="tl-pills"><span class="pill warn">BP Elevated</span><span class="pill ok">Weight ↑</span></div></div></div>
+                <div class="tl-item"><div class="tl-dot"><svg viewBox="0 0 12 12"><path d="M5 1.5h2l1 2.5h-4L5 1.5z"/><rect x="1.5" y="4" width="9" height="6.5" rx="1"/></svg></div><div class="tl-body"><div class="tl-date">May 10, 2026 — Prescription Renewal</div><div class="tl-title">Rx Renewal — Amlodipine 10mg</div><div class="tl-detail">Patient requested early renewal. Compliant with current regimen. Added Hydrochlorothiazide 25mg for BP control.</div><div class="tl-pills"><span class="pill ok">Dispensed</span></div></div></div>
+                <div class="tl-item"><div class="tl-dot"><svg viewBox="0 0 12 12"><path d="M3.5 1.5v5L1 10a.9.9 0 0 0 .8 1.5h8.4a.9.9 0 0 0 .8-1.5L8.5 6.5V1.5"/><path d="M3 1.5h6"/></svg></div><div class="tl-body"><div class="tl-date">Apr 22, 2026 — Lab Results</div><div class="tl-title">Lipid Panel & Metabolic Panel</div><div class="tl-detail">LDL: 138 mg/dL (borderline high). Fasting glucose: 99 mg/dL. eGFR: 78 (mild reduction — monitor). Creatinine: 1.1.</div><div class="tl-pills"><span class="pill warn">LDL High</span><span class="pill ok">Glucose OK</span></div></div></div>
+              </div>
+            </div>
+
+            <!-- Prescriptions -->
+            <div id="ct-rx" class="chart-tab-content" style="display:none">
+              <div style="background:var(--white);border-radius:var(--rlg);padding:16px 18px">
+                <div class="rx-row"><div class="rx-icon"><svg viewBox="0 0 14 14"><path d="M4 1.5h6l2 3H2L4 1.5z"/><rect x="1" y="4.5" width="12" height="8" rx="1.5"/><path d="M5 8h4M7 6.5v3"/></svg></div><div><div class="rx-drug">Amlodipine 10mg</div><div class="rx-dose">Once daily, morning · For hypertension</div></div><div class="rx-right"><div class="rx-qty">Qty: 30</div><div class="rx-refills">Refills: 2 left · Expires Aug 2026</div></div><span class="pill ok" style="margin-left:12px">Active</span></div>
+                <div class="rx-row"><div class="rx-icon"><svg viewBox="0 0 14 14"><path d="M4 1.5h6l2 3H2L4 1.5z"/><rect x="1" y="4.5" width="12" height="8" rx="1.5"/><path d="M5 8h4M7 6.5v3"/></svg></div><div><div class="rx-drug">Hydrochlorothiazide 25mg</div><div class="rx-dose">Once daily · For hypertension (add-on)</div></div><div class="rx-right"><div class="rx-qty">Qty: 30</div><div class="rx-refills">Refills: 3 left · Expires Nov 2026</div></div><span class="pill ok" style="margin-left:12px">Active</span></div>
+                <div class="rx-row"><div class="rx-icon"><svg viewBox="0 0 14 14"><path d="M4 1.5h6l2 3H2L4 1.5z"/><rect x="1" y="4.5" width="12" height="8" rx="1.5"/><path d="M5 8h4M7 6.5v3"/></svg></div><div><div class="rx-drug">Rosuvastatin 10mg</div><div class="rx-dose">Once nightly · For dyslipidemia</div></div><div class="rx-right"><div class="rx-qty">Qty: 30</div><div class="rx-refills">Refills: 1 left · Expires Jul 2026</div></div><span class="pill warn" style="margin-left:12px">Renew Soon</span></div>
+              </div>
+            </div>
+
+            <!-- Lab Results -->
+            <div id="ct-labs" class="chart-tab-content" style="display:none">
+              <div class="tbl-wrap">
+                <table>
+                  <thead><tr><th>Test</th><th>Result</th><th>Reference Range</th><th>Date</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr><td class="td-bold">LDL Cholesterol</td><td style="color:var(--warn-text);font-weight:600">138 mg/dL</td><td class="td-muted">&lt;100 mg/dL</td><td class="td-muted">Apr 22, 2026</td><td><span class="pill warn">High</span></td></tr>
+                    <tr><td class="td-bold">HDL Cholesterol</td><td>52 mg/dL</td><td class="td-muted">&gt;40 mg/dL</td><td class="td-muted">Apr 22, 2026</td><td><span class="pill ok">Normal</span></td></tr>
+                    <tr><td class="td-bold">Fasting Glucose</td><td>99 mg/dL</td><td class="td-muted">70–99 mg/dL</td><td class="td-muted">Apr 22, 2026</td><td><span class="pill ok">Normal</span></td></tr>
+                    <tr><td class="td-bold">eGFR</td><td style="color:var(--warn-text);font-weight:600">78 mL/min</td><td class="td-muted">&gt;90 mL/min</td><td class="td-muted">Apr 22, 2026</td><td><span class="pill warn">Mild ↓</span></td></tr>
+                    <tr><td class="td-bold">HbA1c</td><td>5.6%</td><td class="td-muted">&lt;5.7%</td><td class="td-muted">Jan 15, 2026</td><td><span class="pill ok">Normal</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SOAP Notes -->
+            <div id="ct-notes" class="chart-tab-content" style="display:none">
+              <div style="background:var(--white);border-radius:var(--rlg);padding:20px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                  <div style="font-size:13px;font-weight:700;color:var(--ink)">SOAP Note — Jun 01, 2026</div>
+                  <span class="pill ok">Finalized</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:14px;font-size:12px;color:var(--ink);line-height:1.6">
+                  <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-bottom:4px">S — Subjective</div><div style="color:var(--muted)">Patient reports mild headaches in the morning, mostly when forgetting medication. Denies chest pain, dyspnea, or palpitations. Has been "stressed at work." Admits to salty food intake. Diet non-compliant.</div></div>
+                  <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-bottom:4px">O — Objective</div><div style="color:var(--muted)">BP: 142/88 mmHg (left arm, seated). HR: 78 bpm. Weight: 82kg (+2kg). SpO2: 98%. Lungs clear to auscultation. No pedal edema. JVP not elevated.</div></div>
+                  <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-bottom:4px">A — Assessment</div><div style="color:var(--muted)">Hypertension, Stage 2 — inadequately controlled. Likely exacerbated by dietary non-compliance and psychosocial stress. Early renal impairment (eGFR 78) warrants monitoring.</div></div>
+                  <div><div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-bottom:4px">P — Plan</div><div style="color:var(--muted)">1. Continue Amlodipine 10mg + Hydrochlorothiazide 25mg. 2. Order 24h ambulatory BP monitoring. 3. Refer to dietician for DASH diet counseling. 4. Repeat lipid panel in 3 months. 5. Follow-up in 2 weeks.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SCHEDULE ─── -->
+    <div class="panel" id="panel-schedule">
+      <div class="panel-inner">
+        <div class="ph">
+          <div class="ph-left"><h2>Schedule</h2><p>Week of June 14–18, 2026</p></div>
+          <div class="ph-actions">
+            <button class="btn btn-outline">← Prev</button>
+            <button class="btn btn-outline">Next →</button>
+            <button class="btn btn-primary" onclick="openModal()">+ Book Appointment</button>
+          </div>
+        </div>
+        <div class="schedule-grid">
+          <div class="sched-day today">
+            <div class="sched-day-name">Sun 14</div>
+            <div class="appt green"><div class="appt-time">9:00 AM</div><div class="appt-name">Juan Dela Cruz</div></div>
+            <div class="appt green"><div class="appt-time">9:30 AM</div><div class="appt-name">Maria Reyes</div></div>
+            <div class="appt yellow"><div class="appt-time">10:15 AM</div><div class="appt-name">Roberto Cruz</div></div>
+            <div class="appt blue"><div class="appt-time">11:00 AM</div><div class="appt-name">Ana Villanueva</div></div>
+          </div>
+          <div class="sched-day">
+            <div class="sched-day-name">Mon 15</div>
+            <div class="appt green"><div class="appt-time">8:30 AM</div><div class="appt-name">Carlos Lim</div></div>
+            <div class="appt purple"><div class="appt-time">10:00 AM</div><div class="appt-name">Elena Santos</div></div>
+            <div class="appt green"><div class="appt-time">2:00 PM</div><div class="appt-name">Pedro Garcia</div></div>
+          </div>
+          <div class="sched-day">
+            <div class="sched-day-name">Tue 16</div>
+            <div class="appt blue"><div class="appt-time">9:00 AM</div><div class="appt-name">Ligaya Torres</div></div>
+            <div class="appt green"><div class="appt-time">11:30 AM</div><div class="appt-name">Ben Magpayo</div></div>
+          </div>
+          <div class="sched-day">
+            <div class="sched-day-name">Wed 17</div>
+            <div class="appt yellow"><div class="appt-time">9:00 AM</div><div class="appt-name">Nora Castillo</div></div>
+            <div class="appt green"><div class="appt-time">1:00 PM</div><div class="appt-name">Luis Aquino</div></div>
+            <div class="appt green"><div class="appt-time">3:00 PM</div><div class="appt-name">Joy Mendoza</div></div>
+          </div>
+          <div class="sched-day">
+            <div class="sched-day-name">Thu 18</div>
+            <div class="appt green"><div class="appt-time">10:00 AM</div><div class="appt-name">Cora Bautista</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── ALERTS ─── -->
+    <div class="panel" id="panel-alerts">
+      <div class="panel-inner">
+        <div class="ph">
+          <div class="ph-left"><h2>Alerts</h2><p>5 items require your attention</p></div>
+          <div class="ph-actions">
+            <button class="btn btn-outline">Mark all read</button>
+          </div>
+        </div>
+        <div style="max-width:720px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Critical</div>
+          <div class="alert-card crit"><div class="al-icon crit"><svg viewBox="0 0 13 13"><path d="M6.5 1.5L12 11.5H1L6.5 1.5z"/><path d="M6.5 5v3M6.5 9.5v.5"/></svg></div><div class="al-body"><div class="al-title">Critical potassium — Roberto Cruz</div><div class="al-sub">K+ = 2.8 mEq/L (critical low). Ordered 6:52 AM today. Immediate supplementation required.</div></div><div class="al-time">8m ago</div><button class="al-dismiss"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6"/></svg></button></div>
+          <div class="alert-card crit"><div class="al-icon crit"><svg viewBox="0 0 13 13"><path d="M6.5 1.5L12 11.5H1L6.5 1.5z"/><path d="M6.5 5v3M6.5 9.5v.5"/></svg></div><div class="al-body"><div class="al-title">Drug interaction flagged — Maria Reyes</div><div class="al-sub">Metformin + newly ordered Lisinopril: monitor renal function closely. Possible lactic acidosis risk.</div></div><div class="al-time">1h ago</div><button class="al-dismiss"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6"/></svg></button></div>
+
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">Warning</div>
+          <div class="alert-card warn"><div class="al-icon warn"><svg viewBox="0 0 13 13"><rect x="1.5" y="1.5" width="10" height="10" rx="2"/><path d="M6.5 4.5v3M6.5 9v.5"/></svg></div><div class="al-body"><div class="al-title">Overdue follow-up — Carlos Lim</div><div class="al-sub">Last visit was May 15. COPD patient is 30 days overdue for pulmonary function check.</div></div><div class="al-time">2d ago</div><button class="al-dismiss"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6"/></svg></button></div>
+          <div class="alert-card warn"><div class="al-icon warn"><svg viewBox="0 0 13 13"><rect x="1.5" y="1.5" width="10" height="10" rx="2"/><path d="M6.5 4.5v3M6.5 9v.5"/></svg></div><div class="al-body"><div class="al-title">Prescription expiring — Juan Dela Cruz</div><div class="al-sub">Rosuvastatin 10mg expires Jul 2026. 1 refill remaining. Consider renewal at next visit.</div></div><div class="al-time">Today</div><button class="al-dismiss"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6"/></svg></button></div>
+
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">Informational</div>
+          <div class="alert-card ok"><div class="al-icon ok"><svg viewBox="0 0 13 13"><path d="M2 6.5l3 3 6-6"/></svg></div><div class="al-body"><div class="al-title">Lab results ready — Ana Villanueva</div><div class="al-sub">CBC, thyroid panel, and fasting glucose results are now available for review.</div></div><div class="al-time">30m ago</div><button class="al-dismiss"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6"/></svg></button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PRESCRIPTIONS ─── -->
+    <div class="panel" id="panel-prescriptions">
+      <div class="panel-inner">
+        <div class="ph">
+          <div class="ph-left"><h2>Prescriptions</h2><p>Write and manage patient prescriptions</p></div>
+          <div class="ph-actions">
+            <button class="btn btn-primary">
+              <svg viewBox="0 0 13 13"><rect x="1.5" y="1.5" width="10" height="10" rx="1.5"/><path d="M6.5 4v5M4 6.5h5"/></svg>
+              New Prescription
+            </button>
+          </div>
+        </div>
+        <div class="form-wrap">
+          <div style="font-size:14px;font-weight:700;font-family:'Sora',sans-serif;color:var(--ink);margin-bottom:18px">Write Prescription</div>
+          <div class="form-section">
+            <div class="form-section-title">Patient</div>
+            <div class="form-grid">
+              <div class="field"><label>Patient Name</label><select><option>Juan Dela Cruz — MRN-0034812</option><option>Maria Reyes — MRN-0041207</option></select></div>
+              <div class="field"><label>Date of Prescription</label><input type="date" value="2026-06-14"/></div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Medication</div>
+            <div class="form-grid cols3">
+              <div class="field" style="grid-column:1/3"><label>Drug Name (Generic / Brand)</label><input type="text" placeholder="e.g., Amlodipine 10mg (Norvasc)"/></div>
+              <div class="field"><label>Form</label><select><option>Tablet</option><option>Capsule</option><option>Vial</option><option>Suspension</option></select></div>
+            </div>
+            <div class="form-grid cols3" style="margin-top:10px">
+              <div class="field"><label>Dose</label><input type="text" placeholder="e.g., 10mg"/></div>
+              <div class="field"><label>Frequency</label><select><option>Once daily</option><option>Twice daily</option><option>Three times daily</option><option>As needed (PRN)</option></select></div>
+              <div class="field"><label>Duration</label><input type="text" placeholder="e.g., 30 days"/></div>
+            </div>
+            <div class="form-grid" style="margin-top:10px">
+              <div class="field"><label>Quantity</label><input type="number" placeholder="e.g., 30"/></div>
+              <div class="field"><label>Refills</label><select><option>0</option><option>1</option><option>2</option><option>3</option></select></div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Instructions</div>
+            <div class="form-grid full">
+              <div class="field"><label>Sig (Patient Instructions)</label><textarea placeholder="e.g., Take 1 tablet by mouth once daily in the morning with or without food."></textarea></div>
+              <div class="field"><label>Notes to Pharmacist (optional)</label><input type="text" placeholder="e.g., Dispense as written. No substitution."/></div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-outline">Cancel</button>
+            <button class="btn btn-outline">Save as Draft</button>
+            <button class="btn btn-primary" onclick="showToast()">Sign & Submit Rx</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── LAB RESULTS ─── -->
+    <div class="panel" id="panel-labs">
+      <div class="panel-inner">
+        <div class="ph">
+          <div class="ph-left"><h2>Lab Results</h2><p>2 critical results pending review</p></div>
+          <div class="ph-actions">
+            <button class="btn btn-primary">+ Order Lab</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <div class="tbl-head">
+            <span class="tbl-title">All Lab Results</span>
+            <div class="tbl-filters">
+              <div class="tbl-search"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><path d="M10.5 10.5l3 3"/></svg> Filter…</div>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Patient</th><th>Test</th><th>Ordered By</th><th>Date</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#8B85FF">RC</div><div class="td-bold">Roberto Cruz</div></div></td><td>Electrolytes Panel</td><td class="td-muted">Dr. Santos</td><td class="td-muted">Jun 14, 2026</td><td><span class="pill crit">Critical</span></td><td><div class="td-actions"><div class="td-btn"><svg viewBox="0 0 12 12"><path d="M2 6h8M6 2l4 4-4 4"/></svg></div></div></td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#a78bfa">AV</div><div class="td-bold">Ana Villanueva</div></div></td><td>CBC + Thyroid Panel + FBS</td><td class="td-muted">Dr. Santos</td><td class="td-muted">Jun 14, 2026</td><td><span class="pill info">Ready</span></td><td><div class="td-actions"><div class="td-btn"><svg viewBox="0 0 12 12"><path d="M2 6h8M6 2l4 4-4 4"/></svg></div></div></td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:var(--accent)">JD</div><div class="td-bold">Juan Dela Cruz</div></div></td><td>24h Ambulatory BP</td><td class="td-muted">Dr. Santos</td><td class="td-muted">Jun 12, 2026</td><td><span class="pill neutral">Pending</span></td><td><div class="td-actions"><div class="td-btn"><svg viewBox="0 0 12 12"><path d="M2 6h8M6 2l4 4-4 4"/></svg></div></div></td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:8px"><div class="pt-avatar" style="background:#534AB7">MR</div><div class="td-bold">Maria Reyes</div></div></td><td>HbA1c + Renal Function</td><td class="td-muted">Dr. Santos</td><td class="td-muted">Jun 05, 2026</td><td><span class="pill ok">Normal</span></td><td><div class="td-actions"><div class="td-btn"><svg viewBox="0 0 12 12"><path d="M2 6h8M6 2l4 4-4 4"/></svg></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── NEW VISIT ─── -->
+    <div class="panel" id="panel-newvisit">
+      <div class="panel-inner">
+        <div class="ph">
+          <div class="ph-left"><h2>New Visit</h2><p>Document a clinical encounter</p></div>
+          <div class="ph-actions">
+            <button class="btn btn-outline">Save Draft</button>
+            <button class="btn btn-primary" onclick="showToast('Visit saved to chart')">Finalize & Sign</button>
+          </div>
+        </div>
+        <div class="form-wrap">
+          <div class="form-section">
+            <div class="form-section-title">Visit Info</div>
+            <div class="form-grid cols3">
+              <div class="field"><label>Patient</label><select><option>Juan Dela Cruz</option><option>Maria Reyes</option><option>Roberto Cruz</option></select></div>
+              <div class="field"><label>Visit Type</label><select><option>Follow-up</option><option>New Patient</option><option>Urgent</option><option>Telemedicine</option></select></div>
+              <div class="field"><label>Date & Time</label><input type="datetime-local" value="2026-06-14T09:00"/></div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Vitals</div>
+            <div class="form-grid cols3">
+              <div class="field"><label>Blood Pressure (mmHg)</label><input type="text" placeholder="e.g., 120/80"/></div>
+              <div class="field"><label>Heart Rate (bpm)</label><input type="number" placeholder="e.g., 72"/></div>
+              <div class="field"><label>Temperature (°C)</label><input type="number" placeholder="e.g., 36.6" step="0.1"/></div>
+              <div class="field"><label>SpO2 (%)</label><input type="number" placeholder="e.g., 98"/></div>
+              <div class="field"><label>Weight (kg)</label><input type="number" placeholder="e.g., 70" step="0.1"/></div>
+              <div class="field"><label>Respiratory Rate</label><input type="number" placeholder="e.g., 16"/></div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">SOAP Note</div>
+            <div class="form-grid full">
+              <div class="field"><label>S — Subjective (Chief complaint, patient-reported symptoms)</label><textarea placeholder="Patient reports…" style="min-height:80px"></textarea></div>
+              <div class="field"><label>O — Objective (Physical exam, observations)</label><textarea placeholder="On examination…" style="min-height:80px"></textarea></div>
+              <div class="field"><label>A — Assessment (Diagnosis / impression)</label><textarea placeholder="Assessment: …" style="min-height:60px"></textarea></div>
+              <div class="field"><label>P — Plan (Treatment, referrals, follow-up)</label><textarea placeholder="1. …" style="min-height:80px"></textarea></div>
+            </div>
+          </div>
+          <div class="form-section" style="margin-bottom:0">
+            <div class="form-section-title">ICD-10 Codes</div>
+            <div class="form-grid">
+              <div class="field"><label>Primary Diagnosis</label><input type="text" placeholder="e.g., I10 — Essential Hypertension"/></div>
+              <div class="field"><label>Secondary Diagnosis (optional)</label><input type="text" placeholder="e.g., E78.5 — Hyperlipidemia"/></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app-body -->
+
+<!-- MODAL: New Patient -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-top">
+      <span class="modal-title">Register New Patient</span>
+      <button class="modal-close" onclick="closeModal()"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="field"><label>First Name</label><input type="text" placeholder="e.g., Maria"/></div>
+        <div class="field"><label>Last Name</label><input type="text" placeholder="e.g., Dela Cruz"/></div>
+        <div class="field"><label>Date of Birth</label><input type="date"/></div>
+        <div class="field"><label>Sex</label><select><option value="">Select…</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+        <div class="field"><label>Phone Number</label><input type="tel" placeholder="+63 9XX XXX XXXX"/></div>
+        <div class="field"><label>Blood Type</label><select><option value="">Select…</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+      </div>
+      <div class="field" style="margin-bottom:12px"><label>Address</label><input type="text" placeholder="Street, Barangay, City"/></div>
+      <div class="field" style="margin-bottom:12px"><label>Known Allergies</label><input type="text" placeholder="e.g., Penicillin, Sulfa drugs — or None"/></div>
+      <div class="field" style="margin-bottom:0"><label>Chief Complaint / Reason for Visit</label><textarea placeholder="Briefly describe the reason for this visit…"></textarea></div>
+      <div class="form-actions" style="margin-top:16px">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="closeModal();showToast('Patient registered successfully')">Register Patient</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toast-wrap">
+  <div class="toast" id="toast">
+    <svg viewBox="0 0 15 15"><path d="M2.5 7.5l3.5 3.5 6.5-6.5"/></svg>
+    <span id="toast-msg">Prescription submitted successfully</span>
+  </div>
+</div>
+
+<script>
+// ── DARK MODE ──
+function toggleDark() {
+  const isDark = document.documentElement.classList.toggle('dark')
+  localStorage.setItem('medistock-theme', isDark ? 'dark' : 'light')
+}
+// Restore saved preference
+;(function(){
+  const saved = localStorage.getItem('medistock-theme')
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  if(saved === 'dark' || (!saved && prefersDark)) {
+    document.documentElement.classList.add('dark')
+  }
+})()
+
+// ── PANEL SWITCHING ──
+function switchPanel(id) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('active'))
+  const panel = document.getElementById('panel-'+id)
+  const sb = document.getElementById('sb-'+id)
+  if(panel) panel.classList.add('active')
+  if(sb) sb.classList.add('active')
+}
+
+// ── CHART TABS ──
+function chartTab(el, id) {
+  document.querySelectorAll('#chart-tabs .tab').forEach(t=>t.classList.remove('active'))
+  document.querySelectorAll('.chart-tab-content').forEach(c=>c.style.display='none')
+  el.classList.add('active')
+  document.getElementById(id).style.display='block'
+}
+
+// ── MODAL ──
+function openModal(){document.getElementById('modal-overlay').classList.add('open')}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open')}
+function closeModalOutside(e){if(e.target===document.getElementById('modal-overlay'))closeModal()}
+
+// ── TOAST SIMULATOR ──
+const toastMessages = [
+  { msg: 'Prescription submitted successfully', icon: 'check' },
+  { msg: 'Patient registered — MRN-0058342', icon: 'check' },
+  { msg: 'Lab result flagged for review', icon: 'warn' },
+  { msg: 'Appointment booked — Jun 21, 9:00 AM', icon: 'check' },
+  { msg: 'Alert dismissed', icon: 'check' },
+  { msg: 'Critical lab result — action required', icon: 'crit' },
+]
+let toastIndex = 0
+let toastTimer
+function _showToast(msg, icon) {
+  const wrap = document.getElementById('toast-wrap')
+  const inner = document.getElementById('toast')
+  const svgEl = inner.querySelector('svg')
+  document.getElementById('toast-msg').textContent = msg
+  if(icon === 'warn') {
+    inner.style.background = 'var(--warn-bg)'
+    inner.style.color = 'var(--warn-text)'
+    svgEl.style.stroke = 'var(--warn-text)'
+  } else if(icon === 'crit') {
+    inner.style.background = 'var(--crit-bg)'
+    inner.style.color = 'var(--crit-text)'
+    svgEl.style.stroke = 'var(--crit-text)'
+  } else {
+    inner.style.background = ''
+    inner.style.color = ''
+    svgEl.style.stroke = ''
+  }
+  wrap.classList.remove('show')
+  void wrap.offsetWidth
+  wrap.classList.add('show')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => wrap.classList.remove('show'), 3200)
+}
+function cycleToast() {
+  const item = toastMessages[toastIndex % toastMessages.length]
+  toastIndex++
+  _showToast(item.msg, item.icon)
+}
+function showToast(msg) {
+  _showToast(msg || 'Prescription submitted successfully', 'check')
+}
+
+
+// ── STAT COUNTERS ──
+function countUp(el, target, duration=900) {
+  let start=0, step=target/60, t0=performance.now()
+  function tick(now){
+    let p=Math.min((now-t0)/duration,1)
+    el.textContent=Math.round(p*target)
+    if(p<1) requestAnimationFrame(tick)
+    else el.textContent=target
+  }
+  requestAnimationFrame(tick)
+}
+window.addEventListener('load',()=>{
+  countUp(document.getElementById('d-patients'),12)
+  countUp(document.getElementById('d-labs'),8)
+  countUp(document.getElementById('d-rx'),6)
+  countUp(document.getElementById('d-appts'),4)
+
+  // build visit chart
+  const vals=[60,75,50,90,65,40,80]
+  const chart=document.getElementById('visit-chart')
+  if(chart){
+    vals.forEach((v,i)=>{
+      const b=document.createElement('div')
+      b.className='mini-bar'+(i===6?' hi':'')
+      b.style.height=v+'%'
+      b.style.background=i===6?'var(--accent)':'var(--accent-light)'
+      chart.appendChild(b)
+    })
+  }
+})
+
+// ── DISMISS ALERTS ──
+document.querySelectorAll('.al-dismiss').forEach(btn=>{
+  btn.addEventListener('click',e=>{
+    e.stopPropagation()
+    const card=btn.closest('.alert-card')
+    card.style.transition='opacity .3s, transform .3s'
+    card.style.opacity='0'
+    card.style.transform='translateX(20px)'
+    setTimeout(()=>card.remove(),300)
+    showToast('Alert dismissed')
+  })
+})
+
+// ── GLOBAL SEARCH ──
+document.getElementById('globalSearch').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const q=e.target.value.toLowerCase()
+    if(q.includes('patient')||q.includes('juan')||q.includes('maria'))switchPanel('patients')
+    else if(q.includes('alert'))switchPanel('alerts')
+    else if(q.includes('lab'))switchPanel('labs')
+    else if(q.includes('rx')||q.includes('prescri'))switchPanel('prescriptions')
+    else if(q.includes('schedule')||q.includes('appt'))switchPanel('schedule')
+    e.target.value=''
+  }
+})
+</script>
+</body>
+</html>

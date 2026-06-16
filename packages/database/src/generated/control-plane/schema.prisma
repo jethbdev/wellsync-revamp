@@ -1,0 +1,242 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("CONTROL_PLANE_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/control-plane"
+}
+
+model CpOrganization {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                    String    @db.VarChar(300)
+  slug                    String    @unique @db.VarChar(100)
+  type                    String    @db.VarChar(30)
+  status                  String    @default("TRIAL") @db.VarChar(20)
+  billingEmail            String?   @map("billing_email") @db.VarChar(200)
+  billingPlan             String    @default("FREE_TRIAL") @map("billing_plan") @db.VarChar(50)
+  stripeCustomerId        String?   @map("stripe_customer_id") @db.VarChar(100)
+  stripeSubscriptionId    String?   @map("stripe_subscription_id") @db.VarChar(100)
+  maxStaffSeats           Int       @default(5) @map("max_staff_seats")
+  maxPatientRecords       Int       @default(500) @map("max_patient_records")
+  maxStorageMb            BigInt    @default(1024) @map("max_storage_mb")
+  customDomain            String?   @map("custom_domain") @db.VarChar(255)
+  customDomainStatus      String    @default("NONE") @map("custom_domain_status") @db.VarChar(20)
+  dnsVerificationToken    String?   @map("dns_verification_token") @db.VarChar(100)
+  sslStatus               String    @default("NONE") @map("ssl_status") @db.VarChar(20)
+  primaryColor            String    @default("#0f766e") @map("primary_color") @db.VarChar(7)
+  secondaryColor          String    @default("#111827") @map("secondary_color") @db.VarChar(7)
+  logoUrl                 String?   @map("logo_url") @db.VarChar(500)
+  deploymentUrl           String?   @map("deployment_url") @db.VarChar(500)
+  dbConnectionUri         String?   @map("db_connection_uri") @db.VarChar(500)
+  dbSchemaVersion         String?   @map("db_schema_version") @db.VarChar(50)
+  trialEndsAt             DateTime? @map("trial_ends_at") @db.Timestamptz
+  contractStart           DateTime? @map("contract_start") @db.Date
+  contractEnd             DateTime? @map("contract_end") @db.Date
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  allowCrossOrgReferrals  Boolean   @default(false) @map("allow_cross_org_referrals")
+  referralCapacityStatus  String    @default("ACCEPTING") @map("referral_capacity_status") @db.VarChar(30)
+  referralGeographicScope String    @default("ANY") @map("referral_geographic_scope") @db.VarChar(50)
+  acceptedReferralTypes   String    @default("ALL") @map("accepted_referral_types") @db.VarChar(200)
+
+  featureFlags     CpFeatureFlag[]
+  usageMetrics     CpUsageMetric[]
+  tempAccessGrants CpTempAccessGrant[]
+  tenantDbUpgrades CpTenantDbUpgrade[]
+  incidents        CpIncident[]
+  migrations       CpMigration[]
+  patientIndexes   CpPatientIndex[]
+
+  @@map("cp_organizations")
+}
+
+model CpFeatureFlag {
+  orgId        String   @map("org_id") @db.Uuid
+  featureKey   String   @map("feature_key") @db.VarChar(100)
+  isEnabled    Boolean  @default(false) @map("is_enabled")
+  configuredAt DateTime @default(now()) @map("configured_at") @db.Timestamptz
+  configuredBy String?  @map("configured_by") @db.Uuid
+
+  organization CpOrganization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@id([orgId, featureKey])
+  @@map("cp_feature_flags")
+}
+
+model CpUsageMetric {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId               String   @map("org_id") @db.Uuid
+  recordedAt          DateTime @default(now()) @map("recorded_at") @db.Timestamptz
+  activeStaffCount    Int      @default(0) @map("active_staff_count")
+  patientRecordsCount Int      @default(0) @map("patient_records_count")
+  storageBytesUsed    BigInt   @default(0) @map("storage_bytes_used")
+  smsSentThisMonth    Int      @default(0) @map("sms_sent_this_month")
+  apiRequestsCount    Int      @default(0) @map("api_requests_count")
+
+  organization CpOrganization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("cp_usage_metrics")
+}
+
+model CpPluginDirectory {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pluginId    String    @unique @map("plugin_id") @db.VarChar(100)
+  name        String    @db.VarChar(200)
+  description String?
+  version     String    @db.VarChar(50)
+  isPublished Boolean   @default(false) @map("is_published")
+  publishedAt DateTime? @map("published_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("cp_plugin_directory")
+}
+
+model CpTempAccessGrant {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId         String    @map("org_id") @db.Uuid
+  requestedBy   String    @map("requested_by") @db.Uuid
+  reason        String
+  scope         String    @db.VarChar(20)
+  durationHours Int       @map("duration_hours")
+  status        String    @default("PENDING") @db.VarChar(20)
+  requestedAt   DateTime  @default(now()) @map("requested_at") @db.Timestamptz
+  approvedAt    DateTime? @map("approved_at") @db.Timestamptz
+  approvedBy    String?   @map("approved_by") @db.VarChar(200)
+  expiresAt     DateTime? @map("expires_at") @db.Timestamptz
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz
+  revokedBy     String?   @map("revoked_by") @db.VarChar(200)
+
+  organization CpOrganization @relation(fields: [orgId], references: [id])
+
+  @@map("cp_temp_access_grants")
+}
+
+model CpTenantDbUpgrade {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId         String    @map("org_id") @db.Uuid
+  schemaVersion String    @map("schema_version") @db.VarChar(50)
+  status        String    @db.VarChar(20)
+  startedAt     DateTime? @map("started_at") @db.Timestamptz
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz
+  errorLog      String?   @map("error_log")
+
+  organization CpOrganization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("cp_tenant_db_upgrades")
+}
+
+model CpIncident {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId       String?   @map("org_id") @db.Uuid
+  title       String    @db.VarChar(300)
+  description String?
+  severity    String?   @db.VarChar(20)
+  status      String    @default("OPEN") @db.VarChar(20)
+  createdBy   String?   @map("created_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  resolvedAt  DateTime? @map("resolved_at") @db.Timestamptz
+
+  organization CpOrganization? @relation(fields: [orgId], references: [id])
+
+  @@map("cp_incidents")
+}
+
+model CpMigration {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orgId        String   @map("org_id") @db.Uuid
+  sourceSystem String   @map("source_system") @db.VarChar(50)
+  status       String   @db.VarChar(20)
+  totalRecords Int?     @map("total_records")
+  successCount Int?     @map("success_count")
+  failedCount  Int?     @map("failed_count")
+  runBy        String?  @map("run_by") @db.VarChar(200)
+  runAt        DateTime @default(now()) @map("run_at") @db.Timestamptz
+  notes        String?
+
+  organization CpOrganization @relation(fields: [orgId], references: [id])
+
+  @@map("cp_migrations")
+}
+
+// ====================================================
+// BetterAuth Models for Control Plane Ops
+// ====================================================
+
+model CpUser {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String   @unique @db.VarChar(200)
+  name          String?  @db.VarChar(200)
+  emailVerified Boolean  @default(false) @map("email_verified")
+  image         String?  @db.VarChar(500)
+  passwordHash  String?  @map("password_hash") @db.VarChar(300)
+  mfaEnabled    Boolean  @default(false) @map("mfa_enabled")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  sessions CpSession[]
+  accounts CpAccount[]
+
+  @@map("cp_users")
+}
+
+model CpSession {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  token     String   @unique @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  ipAddress String?  @map("ip_address") @db.VarChar(100)
+  userAgent String?  @map("user_agent") @db.VarChar(500)
+  userId    String   @map("user_id") @db.Uuid
+  user      CpUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("cp_sessions")
+}
+
+model CpAccount {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId    String    @map("account_id") @db.VarChar(255)
+  providerId   String    @map("provider_id") @db.VarChar(100)
+  userId       String    @map("user_id") @db.Uuid
+  user         CpUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken  String?   @map("access_token") @db.Text
+  refreshToken String?   @map("refresh_token") @db.Text
+  idToken      String?   @map("id_token") @db.Text
+  expiresAt    DateTime? @map("expires_at") @db.Timestamptz
+  password     String?   @map("password") @db.VarChar(300)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([providerId, accountId])
+  @@map("cp_accounts")
+}
+
+model CpVerification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identifier String    @db.VarChar(255)
+  value      String    @db.VarChar(255)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime? @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("cp_verifications")
+}
+
+model CpPatientIndex {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientPin String   @unique @map("patient_pin") @db.VarChar(50)
+  firstName  String   @map("first_name") @db.VarChar(100)
+  lastName   String   @map("last_name") @db.VarChar(100)
+  birthDate  DateTime @map("birth_date") @db.Date
+  sex        String   @db.VarChar(10)
+  orgId      String   @map("org_id") @db.Uuid
+  orgSlug    String   @map("org_slug") @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  organization CpOrganization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([firstName, lastName, birthDate])
+  @@map("cp_patient_index")
+}

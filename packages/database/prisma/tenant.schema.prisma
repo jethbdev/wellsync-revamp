@@ -1,0 +1,1430 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/tenant"
+}
+
+// ----------------------------------------------------
+// 1. Core & Geographic Tables
+// ----------------------------------------------------
+
+model Organization {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String   @db.VarChar(300)
+  slug         String   @unique @db.VarChar(100)
+  type         String   @db.VarChar(30)
+  status       String   @default("TRIAL") @db.VarChar(20)
+  billingEmail String?  @map("billing_email") @db.VarChar(200)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  allowCrossOrgReferrals Boolean  @default(false) @map("allow_cross_org_referrals")
+  referralCapacityStatus String   @default("ACCEPTING") @map("referral_capacity_status") @db.VarChar(30)
+  referralGeographicScope String  @default("ANY") @map("referral_geographic_scope") @db.VarChar(50)
+  acceptedReferralTypes  String   @default("ALL") @map("accepted_referral_types") @db.VarChar(200)
+
+  facilities       Facility[]
+  installedPlugins InstalledPlugin[]
+
+  @@map("organizations")
+}
+
+model Facility {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId        String   @map("organization_id") @db.Uuid
+  nhfrCode              String?  @unique @map("nhfr_code") @db.VarChar(50)
+  name                  String   @db.VarChar(300)
+  facilityType          String   @map("facility_type") @db.VarChar(20)
+  regionCode            String?  @map("region_code") @db.VarChar(10)
+  provinceCode          String?  @map("province_code") @db.VarChar(10)
+  municipalityCode      String?  @map("municipality_code") @db.VarChar(10)
+  barangayCode          String?  @map("barangay_code") @db.VarChar(10)
+  address               String?
+  contactNumber         String?  @map("contact_number") @db.VarChar(50)
+  email                 String?  @db.VarChar(200)
+  logoUrl               String?  @map("logo_url") @db.VarChar(500)
+  leftSealUrl           String?  @map("left_seal_url") @db.VarChar(500)
+  rightSealUrl          String?  @map("right_seal_url") @db.VarChar(500)
+  reportHeaderProvince  String?  @map("report_header_province") @db.VarChar(200)
+  reportHeaderOffice    String?  @map("report_header_office") @db.VarChar(200)
+  isActive              Boolean  @default(true) @map("is_active")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  region       Region?      @relation(fields: [regionCode], references: [code])
+  province     Province?    @relation(fields: [provinceCode], references: [code])
+  municipality Municipality? @relation(fields: [municipalityCode], references: [code])
+  barangay     Barangay?    @relation(fields: [barangayCode], references: [code])
+
+  users                     User[]
+  patients                  Patient[]
+  households                Household[]
+  consultations             Consultations[]
+  scheduledVisits           ScheduledVisit[]
+  queueEntries              QueueEntry[]
+  productThresholds         FacilityProductThreshold[]
+  warehouses                Warehouse[]
+  inventoryItems            InventoryItem[]
+  stockTransactions         StockTransaction[]
+  dispenseRecords           DispenseRecord[]
+  requisitions              Requisition[]
+  purchaseOrders            PurchaseOrder[]
+  goodsReceipts             GoodsReceipt[]
+  invoices                  Invoice[]
+  issuancesAsSource         StockIssuance[]            @relation("SourceFacility")
+  issuancesAsDest           StockIssuance[]            @relation("DestinationFacility")
+  stockIssuancesOwned       StockIssuance[]            @relation("FacilityOwner")
+  disposals                 Disposal[]
+  referralsAsReferring      Referral[]                 @relation("ReferringFacility")
+  referralsAsReceiving      Referral[]                 @relation("ReceivingFacility")
+  diseaseAlertThresholds    DiseaseAlertThreshold[]
+  diseaseAlerts             DiseaseAlert[]
+  notifications             Notification[]
+  auditLogs                 AuditLog[]
+  installedPlugins          InstalledPlugin[]
+  fhsisServiceRecords       FhsisServiceRecord[]
+
+  @@map("facilities")
+}
+
+model Region {
+  code String @id @db.VarChar(10)
+  name String @db.VarChar(200)
+
+  provinces  Province[]
+  facilities Facility[]
+
+  @@map("regions")
+}
+
+model Province {
+  code       String @id @db.VarChar(10)
+  name       String @db.VarChar(200)
+  regionCode String @map("region_code") @db.VarChar(10)
+
+  region         Region           @relation(fields: [regionCode], references: [code])
+  municipalities Municipality[]
+  facilities     Facility[]
+
+  @@map("provinces")
+}
+
+model Municipality {
+  code         String @id @db.VarChar(10)
+  name         String @db.VarChar(200)
+  provinceCode String @map("province_code") @db.VarChar(10)
+
+  province   Province   @relation(fields: [provinceCode], references: [code])
+  barangays  Barangay[]
+  facilities Facility[]
+
+  @@map("municipalities")
+}
+
+model Barangay {
+  code             String @id @db.VarChar(10)
+  name             String @db.VarChar(200)
+  municipalityCode String @map("municipality_code") @db.VarChar(10)
+
+  municipality Municipality @relation(fields: [municipalityCode], references: [code])
+  facilities   Facility[]
+
+  @@map("barangays")
+}
+
+// ----------------------------------------------------
+// 2. Identity & Roles
+// ----------------------------------------------------
+
+model Role {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(100)
+  description String?
+  scope       String   @db.VarChar(20) // FACILITY, ORG_WIDE
+  color       String?  @db.VarChar(50)
+  icon        String?  @db.VarChar(50)
+
+  permissions Permission[]
+  users       User[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roleId     String @map("role_id") @db.Uuid
+  permission String @db.VarChar(100)
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permission])
+  @@map("permissions")
+}
+
+model User {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String    @unique @db.VarChar(200)
+  passwordHash  String    @map("password_hash") @db.VarChar(300)
+  firstName     String    @map("first_name") @db.VarChar(100)
+  lastName      String    @map("last_name") @db.VarChar(100)
+  displayName   String?   @map("display_name") @db.VarChar(200)
+  contactNumber String?   @map("contact_number") @db.VarChar(30)
+  roleId        String    @map("role_id") @db.Uuid
+  facilityId    String?   @map("facility_id") @db.Uuid
+  isActive      Boolean   @default(true) @map("is_active")
+  isAcceptingConsultations Boolean @default(true) @map("is_accepting_consultations")
+  isFirstLogin  Boolean   @default(true) @map("is_first_login")
+  lastLoginAt   DateTime? @map("last_login_at") @db.Timestamptz
+  mfaEnabled    Boolean   @default(false) @map("mfa_enabled")
+  createdById   String?   @map("created_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  emailVerified Boolean   @default(false) @map("email_verified")
+  image         String?   @db.VarChar(500)
+
+  role     Role      @relation(fields: [roleId], references: [id])
+  facility Facility? @relation(fields: [facilityId], references: [id])
+  creator  User?     @relation("UserToCreator", fields: [createdById], references: [id])
+
+  sessions                 Session[]
+  accounts                 Account[]
+  createdUsers             User[]                    @relation("UserToCreator")
+  createdPatients          Patient[]
+  createdAllergies         PatientAllergy[]
+  createdAlerts            PatientAlert[]
+  attendedConsultations    Consultations[]           @relation("AttendingProvider")
+  createdConsultations     Consultations[]           @relation("ConsultationCreator")
+  createdVitalSigns        VitalSigns[]
+  createdPhysicalExams     PhysicalExam[]
+  createdDiagnoses         Diagnosis[]
+  createdDoctorsOrders     DoctorsOrder[]
+  createdLabResults        LabResult[]
+  prescribedPrescriptions  Prescription[]
+  prescribedMedications    MedicationOrder[]
+  createdVisits            ScheduledVisit[]
+  createdBatches           InventoryBatch[]
+  createdTransactions      StockTransaction[]
+  dispensedRecords         DispenseRecord[]
+  revertedDispenseLines    DispenseLine[]
+  createdRequisitions      Requisition[]
+  createdPurchaseOrders    PurchaseOrder[]
+  receivedReceipts         GoodsReceipt[]
+  createdInvoices          Invoice[]
+  createdIssuances         StockIssuance[]
+  createdDisposals         Disposal[]
+  referralsCreated         Referral[]
+  diseaseAlertThresholds   DiseaseAlertThreshold[]
+  acknowledgedAlerts       DiseaseAlert[]            @relation("AlertAcknowledgeBy")
+  resolvedAlerts           DiseaseAlert[]            @relation("AlertResolveBy")
+  notificationsReceived    Notification[]
+  auditLogs                AuditLog[]
+  installedPlugins         InstalledPlugin[]
+  uploadedDocuments        PatientDocument[]
+  scheduledVisitsAsDoctor ScheduledVisit[]          @relation("ScheduledVisitDoctor")
+  queueEntries            QueueEntry[]
+
+  @@map("users")
+}
+
+// ----------------------------------------------------
+// 3. Patients & Demographics
+// ----------------------------------------------------
+
+model Patient {
+  id                           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId                   String    @map("facility_id") @db.Uuid
+  pin                          String    @db.VarChar(20)
+  prefix                       String?   @db.VarChar(10)
+  firstName                    String    @map("first_name") @db.VarChar(100)
+  lastName                     String    @map("last_name") @db.VarChar(100)
+  middleName                   String?   @map("middle_name") @db.VarChar(100)
+  suffix                       String?   @db.VarChar(10)
+  sex                          String    @db.VarChar(10)
+  birthDate                    DateTime  @map("birth_date") @db.Date
+  birthPlace                   String?   @map("birth_place") @db.VarChar(200)
+  civilStatus                  String?   @map("civil_status") @db.VarChar(30)
+  bloodType                    String?   @map("blood_type") @db.VarChar(5)
+  nationality                  String?   @db.VarChar(50)
+  religion                     String?   @db.VarChar(50)
+  ethnicGroup                  String?   @map("ethnic_group") @db.VarChar(50)
+  isIndigenous                 Boolean   @default(false) @map("is_indigenous")
+  regionCode                   String?   @map("region_code") @db.VarChar(10)
+  provinceCode                 String?   @map("province_code") @db.VarChar(10)
+  municipalityCode             String?   @map("municipality_code") @db.VarChar(10)
+  barangayCode                 String?   @map("barangay_code") @db.VarChar(10)
+  streetAddress                String?   @map("street_address") @db.VarChar(255)
+  zipCode                      String?   @map("zip_code") @db.VarChar(10)
+  contactNumber                String?   @map("contact_number") @db.VarChar(30)
+  email                        String?   @db.VarChar(200)
+  emergencyContactName         String?   @map("emergency_contact_name") @db.VarChar(200)
+  emergencyContactPhone        String?   @map("emergency_contact_phone") @db.VarChar(30)
+  emergencyContactRelationship String?   @map("emergency_contact_relationship") @db.VarChar(50)
+  philhealthNumber             String?   @map("philhealth_number") @db.VarChar(30)
+  philhealthCategory           String?   @map("philhealth_category") @db.VarChar(50)
+  philhealthStatus             String?   @map("philhealth_status") @db.VarChar(30)
+  nhtsId                       String?   @map("nhts_id") @db.VarChar(50)
+  isNhtsMember                 Boolean   @default(false) @map("is_nhts_member")
+  pantawidId                   String?   @map("pantawid_id") @db.VarChar(50)
+  is4psMember                  Boolean   @default(false) @map("is_4ps_member")
+  familySerialNumber           String?   @map("family_serial_number") @db.VarChar(50)
+  insuranceProvider            String?   @map("insurance_provider") @db.VarChar(200)
+  insuranceNumber              String?   @map("insurance_number") @db.VarChar(100)
+  hmoCardNumber                String?   @map("hmo_card_number") @db.VarChar(100)
+  hmoPolicyHolder              String?   @map("hmo_policy_holder") @db.VarChar(200)
+  hmoApprovalCode              String?   @map("hmo_approval_code") @db.VarChar(100)
+  photoUrl                     String?   @map("photo_url") @db.VarChar(500)
+  status                       String    @default("ACTIVE") @db.VarChar(20)
+  isMerged                     Boolean   @default(false) @map("is_merged")
+  mergedIntoId                 String?   @map("merged_into_id") @db.Uuid
+  portalAccountId              String?   @map("portal_account_id") @db.VarChar(200)
+  createdById                  String?   @map("created_by") @db.Uuid
+  createdAt                    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                    DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  emailVerified                Boolean   @default(false) @map("email_verified")
+
+  facility   Facility  @relation(fields: [facilityId], references: [id])
+  mergedInto Patient?  @relation("MergedPatients", fields: [mergedIntoId], references: [id])
+  creator    User?     @relation(fields: [createdById], references: [id])
+
+  sessions             PatientSession[]
+  accounts             PatientAccount[]
+
+  mergedPatients       Patient[]            @relation("MergedPatients")
+  allergies            PatientAllergy[]
+  alerts               PatientAlert[]
+  relationships        PatientRelationship[] @relation("PatientToRelated")
+  relationshipsRelated PatientRelationship[] @relation("RelatedToPatient")
+  consultations        Consultations[]
+  prescriptions        Prescription[]
+  medicationOrders     MedicationOrder[]
+  scheduledVisits      ScheduledVisit[]
+  stockTransactions    StockTransaction[]
+  dispenseRecords      DispenseRecord[]
+  referrals            Referral[]
+  fhsisServiceRecords  FhsisServiceRecord[]
+  documents            PatientDocument[]
+  queueEntries         QueueEntry[]
+
+  @@unique([facilityId, pin])
+  @@map("patients")
+}
+
+model PatientAllergy {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId    String   @map("patient_id") @db.Uuid
+  allergenType String   @map("allergen_type") @db.VarChar(50)
+  allergenName String   @map("allergen_name") @db.VarChar(200)
+  reaction     String?
+  severity     String?  @db.VarChar(20)
+  createdById  String?  @map("created_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  creator User?   @relation(fields: [createdById], references: [id])
+
+  @@map("patient_allergies")
+}
+
+model PatientAlert {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId   String   @map("patient_id") @db.Uuid
+  alertType   String   @map("alert_type") @db.VarChar(50)
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdById String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  creator User?   @relation(fields: [createdById], references: [id])
+
+  @@map("patient_alerts")
+}
+
+model PatientDocument {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId   String   @map("patient_id") @db.Uuid
+  fileName    String   @map("file_name") @db.VarChar(255)
+  fileType    String   @map("file_type") @db.VarChar(50)
+  fileSize    Int      @map("file_size")
+  fileUrl     String   @map("file_url") @db.VarChar(500)
+  uploadedBy  String?  @map("uploaded_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  uploader User?   @relation(fields: [uploadedBy], references: [id])
+
+  @@map("patient_documents")
+}
+
+// ----------------------------------------------------
+// 4. Family Tree & Households
+// ----------------------------------------------------
+
+model Household {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId    String   @map("facility_id") @db.Uuid
+  householdCode String?  @map("household_code") @db.VarChar(50)
+  address       String?
+  barangayCode  String?  @map("barangay_code") @db.VarChar(10)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+
+  relationships PatientRelationship[]
+
+  @@map("households")
+}
+
+model PatientRelationship {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId        String   @map("patient_id") @db.Uuid
+  relatedPatientId String   @map("related_patient_id") @db.Uuid
+  relationshipType String   @map("relationship_type") @db.VarChar(50)
+  householdId      String?  @map("household_id") @db.Uuid
+  isHead           Boolean  @default(false) @map("is_head")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  patient        Patient    @relation("PatientToRelated", fields: [patientId], references: [id])
+  relatedPatient Patient    @relation("RelatedToPatient", fields: [relatedPatientId], references: [id])
+  household      Household? @relation(fields: [householdId], references: [id])
+
+  @@unique([patientId, relatedPatientId])
+  @@map("patient_relationships")
+}
+
+// ----------------------------------------------------
+// 5. Clinical Consultations & Diagnoses
+// ----------------------------------------------------
+
+model Consultations {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId          String   @map("facility_id") @db.Uuid
+  patientId           String   @map("patient_id") @db.Uuid
+  consultationNumber  String?  @map("consultation_number") @db.VarChar(30)
+  consultationDate    DateTime @map("consultation_date") @db.Date
+  consultationTime    String   @map("consultation_time") @db.VarChar(30) // Map TIME as string
+  natureOfVisit       String   @map("nature_of_visit") @db.VarChar(30)
+  modeOfTransaction   String   @map("mode_of_transaction") @db.VarChar(30)
+  patientAgeYears     Int?     @map("patient_age_years")
+  patientAgeMonths    Int?     @map("patient_age_months")
+  patientAgeDays      Int?     @map("patient_age_days")
+  attendingProviderId String?  @map("attending_provider_id") @db.Uuid
+  patientConsent      Boolean  @default(true) @map("patient_consent")
+  chiefComplaint      String?  @map("chief_complaint")
+  historyOfIllness    String?  @map("history_of_illness")
+  treatmentPlan       String?  @map("treatment_plan")
+  followUpInstructions String? @map("follow_up_instructions")
+  status              String   @default("DRAFT") @db.VarChar(20)
+  scheduledVisitId    String?  @map("scheduled_visit_id") @db.Uuid
+  referralId          String?  @map("referral_id") @db.Uuid
+  createdById         String?  @map("created_by") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  facility          Facility  @relation(fields: [facilityId], references: [id])
+  patient           Patient   @relation(fields: [patientId], references: [id])
+  attendingProvider User?     @relation("AttendingProvider", fields: [attendingProviderId], references: [id])
+  creator           User?     @relation("ConsultationCreator", fields: [createdById], references: [id])
+
+  consultationTypes   ConsultationType[]
+  vitalSigns          VitalSigns[]
+  physicalExams       PhysicalExam[]
+  diagnoses           Diagnosis[]
+  doctorsOrders       DoctorsOrder[]
+  labResults          LabResult[]
+  prescriptions       Prescription[]
+  medicationOrders    MedicationOrder[]
+  stockTransactions   StockTransaction[]
+  dispenseRecords     DispenseRecord[]
+  referrals           Referral[]
+  fhsisServiceRecords FhsisServiceRecord[]
+
+  @@map("consultations")
+}
+
+model ConsultationType {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultationId String  @map("consultation_id") @db.Uuid
+  typeCode       String  @map("type_code") @db.VarChar(50)
+  isPrimary      Boolean @default(false) @map("is_primary")
+
+  consultation Consultations @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("consultation_types")
+}
+
+model VitalSigns {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultationId      String   @map("consultation_id") @db.Uuid
+  bpSystolic          Int?     @map("bp_systolic")
+  bpDiastolic         Int?     @map("bp_diastolic")
+  bpAssessment        String?  @map("bp_assessment") @db.VarChar(30)
+  respiratoryRate     Int?     @map("respiratory_rate")
+  temperatureCelsius  Decimal? @map("temperature_celsius") @db.Decimal(4, 1)
+  heartRate           Int?     @map("heart_rate")
+  pulseRate           Int?     @map("pulse_rate")
+  oxygenSaturation    Decimal? @map("oxygen_saturation") @db.Decimal(5, 2)
+  heightCm            Decimal? @map("height_cm") @db.Decimal(5, 2)
+  weightKg            Decimal? @map("weight_kg") @db.Decimal(5, 2)
+  bmi                 Decimal? @db.Decimal(4, 2)
+  bmiCategory         String?  @map("bmi_category") @db.VarChar(30)
+  heightForAge        String?  @map("height_for_age") @db.VarChar(30)
+  weightForAge        String?  @map("weight_for_age") @db.VarChar(30)
+  createdById         String?  @map("created_by") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  consultation Consultations @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  creator      User?         @relation(fields: [createdById], references: [id])
+
+  @@map("vital_signs")
+}
+
+model PhysicalExam {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultationId String   @map("consultation_id") @db.Uuid
+  systemName     String   @map("system_name") @db.VarChar(50)
+  findings       String?
+  isNormal       Boolean  @default(true) @map("is_normal")
+  createdById    String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  consultation Consultations @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  creator      User?         @relation(fields: [createdById], references: [id])
+
+  @@map("physical_exams")
+}
+
+model Diagnosis {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultationId   String   @map("consultation_id") @db.Uuid
+  icd10Code        String   @map("icd10_code") @db.VarChar(10)
+  icd10Description String?  @map("icd10_description") @db.VarChar(300)
+  diagnosisType    String   @map("diagnosis_type") @db.VarChar(20)
+  isPrimary        Boolean  @default(true) @map("is_primary")
+  remarks          String?
+  createdById      String?  @map("created_by") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  consultation Consultations @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  icd10        Icd10Code     @relation(fields: [icd10Code], references: [code])
+  creator      User?         @relation(fields: [createdById], references: [id])
+
+  @@map("diagnoses")
+}
+
+model Icd10Code {
+  code        String  @id @db.VarChar(10)
+  description String  @db.VarChar(500)
+  category    String? @db.VarChar(100)
+  isActive    Boolean @default(true) @map("is_active")
+
+  diagnoses Diagnosis[]
+
+  @@map("icd10_codes")
+}
+
+// ----------------------------------------------------
+// 6. Orders & Lab Results
+// ----------------------------------------------------
+
+model DoctorsOrder {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultationId String   @map("consultation_id") @db.Uuid
+  orderType      String   @map("order_type") @db.VarChar(30)
+  orderDetails   String   @map("order_details")
+  orderedById    String?  @map("ordered_by") @db.Uuid
+  status         String   @default("PENDING") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  consultation Consultations @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  orderedBy    User?         @relation(fields: [orderedById], references: [id])
+
+  labResults LabResult[]
+
+  @@map("doctors_orders")
+}
+
+model LabResult {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  doctorsOrderId String?   @map("doctors_order_id") @db.Uuid
+  consultationId String    @map("consultation_id") @db.Uuid
+  labType        String    @map("lab_type") @db.VarChar(50)
+  resultData     Json?     @map("result_data")
+  resultDate     DateTime? @map("result_date") @db.Date
+  performedBy    String?   @map("performed_by") @db.VarChar(200)
+  createdById    String?   @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  doctorsOrder DoctorsOrder? @relation(fields: [doctorsOrderId], references: [id])
+  consultation Consultations @relation(fields: [consultationId], references: [id])
+  creator      User?         @relation(fields: [createdById], references: [id])
+
+  @@map("lab_results")
+}
+
+// ----------------------------------------------------
+// 7. Prescriptions
+// ----------------------------------------------------
+
+model Prescription {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultationId    String    @map("consultation_id") @db.Uuid
+  patientId         String    @map("patient_id") @db.Uuid
+  prescriptionToken String    @unique @map("prescription_token") @db.VarChar(100)
+  validUntil        DateTime? @map("valid_until") @db.Date
+  status            String    @default("ACTIVE") @db.VarChar(20)
+  prescribedById    String?   @map("prescribed_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  consultation Consultations @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  prescribedBy User?         @relation(fields: [prescribedById], references: [id])
+
+  medicationOrders MedicationOrder[]
+
+  @@map("prescriptions")
+}
+
+model MedicationOrder {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultationId String   @map("consultation_id") @db.Uuid
+  patientId      String   @map("patient_id") @db.Uuid
+  prescriptionId String?  @map("prescription_id") @db.Uuid
+  productId      String?  @map("product_id") @db.Uuid
+  medicineName   String?  @map("medicine_name") @db.VarChar(300)
+  dose           String?  @db.VarChar(100)
+  frequency      String?  @db.VarChar(50)
+  duration       String?  @db.VarChar(100)
+  quantity       Decimal  @db.Decimal(10, 2)
+  unit           String?  @db.VarChar(30)
+  instructions   String?
+  status         String   @default("PENDING") @db.VarChar(20)
+  prescribedById String?  @map("prescribed_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  consultation Consultations @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  prescription Prescription? @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  product      Product?      @relation(fields: [productId], references: [id])
+  prescribedBy User?         @relation(fields: [prescribedById], references: [id])
+
+  dispenseLines DispenseLine[]
+
+  @@map("medication_orders")
+}
+
+// ----------------------------------------------------
+// 8. Scheduled Visits
+// ----------------------------------------------------
+
+model ScheduledVisit {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId      String    @map("patient_id") @db.Uuid
+  facilityId     String    @map("facility_id") @db.Uuid
+  consultationId String?   @map("consultation_id") @db.Uuid
+  scheduledDate  DateTime  @map("scheduled_date") @db.Date
+  scheduledTime  String?   @map("scheduled_time") @db.VarChar(30)
+  purpose        String?
+  status         String    @default("PENDING") @db.VarChar(20)
+  smsSent        Boolean   @default(false) @map("sms_sent")
+  createdById    String?   @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  meetingLink    String?   @map("meeting_link")
+  passcode       String?
+  doctorId       String?   @map("doctor_id") @db.Uuid
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  facility Facility @relation(fields: [facilityId], references: [id])
+  creator User? @relation(fields: [createdById], references: [id])
+  doctor User? @relation("ScheduledVisitDoctor", fields: [doctorId], references: [id])
+
+  @@map("scheduled_visits")
+}
+
+// ----------------------------------------------------
+// 9. Products & Inventory
+// ----------------------------------------------------
+
+model Product {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code               String   @unique @db.VarChar(50)
+  genericName        String   @map("generic_name") @db.VarChar(300)
+  brandName          String?  @map("brand_name") @db.VarChar(300)
+  dosageForm         String?  @map("dosage_form") @db.VarChar(100)
+  category           String   @db.VarChar(20)
+  unitOfMeasure      String   @map("unit_of_measure") @db.VarChar(30)
+  isBatchTracked     Boolean  @default(true) @map("is_batch_tracked")
+  isVaccine          Boolean  @default(false) @map("is_vaccine")
+  requiresColdChain  Boolean  @default(false) @map("requires_cold_chain")
+  vvmRequired        Boolean  @default(false) @map("vvm_required")
+  reorderLevel       Decimal? @map("reorder_level") @db.Decimal(12, 3)
+  minStockLevel      Decimal? @map("min_stock_level") @db.Decimal(12, 3)
+  maxStockLevel      Decimal? @map("max_stock_level") @db.Decimal(12, 3)
+  storageRequirements String? @map("storage_requirements")
+  nosirsCode         String?  @map("nosirs_code") @db.VarChar(50)
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  thresholds        FacilityProductThreshold[]
+  inventoryItems    InventoryItem[]
+  inventoryBatches  InventoryBatch[]
+  stockTransactions StockTransaction[]
+  dispenseLines     DispenseLine[]
+  requisitionLines  RequisitionLine[]
+  poLines           PurchaseOrderLine[]
+  grnLines          GoodsReceiptLine[]
+  issuanceLines     StockIssuanceLine[]
+  disposalLines     DisposalLine[]
+  medicationOrders  MedicationOrder[]
+
+  @@map("products")
+}
+
+model FacilityProductThreshold {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId    String   @map("facility_id") @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  reorderLevel  Decimal? @map("reorder_level") @db.Decimal(12, 3)
+  minStockLevel Decimal? @map("min_stock_level") @db.Decimal(12, 3)
+  maxStockLevel Decimal? @map("max_stock_level") @db.Decimal(12, 3)
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@unique([facilityId, productId])
+  @@map("facility_product_thresholds")
+}
+
+model Warehouse {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId String  @map("facility_id") @db.Uuid
+  name       String  @db.VarChar(200)
+  isDefault  Boolean @default(false) @map("is_default")
+  isActive   Boolean @default(true) @map("is_active")
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+
+  inventoryItems   InventoryItem[]
+  inventoryBatches InventoryBatch[]
+  transactions     StockTransaction[]
+  bins             StorageBin[]
+
+  @@map("warehouses")
+}
+
+model StorageBin {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  warehouseId String   @map("warehouse_id") @db.Uuid
+  binCode     String   @map("bin_code") @db.VarChar(50)
+  description String?  @db.VarChar(200)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  inventoryBatches  InventoryBatch[]
+  stockTransactions StockTransaction[]
+
+  @@unique([warehouseId, binCode])
+  @@map("storage_bins")
+}
+
+model InventoryItem {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId      String   @map("facility_id") @db.Uuid
+  warehouseId     String   @map("warehouse_id") @db.Uuid
+  productId       String   @map("product_id") @db.Uuid
+  quantityOnHand  Decimal  @default(0) @map("quantity_on_hand") @db.Decimal(12, 3)
+  lastUpdated     DateTime @default(now()) @map("last_updated") @db.Timestamptz
+
+  facility  Facility  @relation(fields: [facilityId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  batches InventoryBatch[]
+
+  @@unique([warehouseId, productId])
+  @@map("inventory_items")
+}
+
+model InventoryBatch {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inventoryItemId String    @map("inventory_item_id") @db.Uuid
+  warehouseId     String    @map("warehouse_id") @db.Uuid
+  binId           String?   @map("bin_id") @db.Uuid
+  productId       String    @map("product_id") @db.Uuid
+  batchNumber     String    @map("batch_number") @db.VarChar(100)
+  lotNumber       String?   @map("lot_number") @db.VarChar(100)
+  quantityOnHand  Decimal   @default(0) @map("quantity_on_hand") @db.Decimal(12, 3)
+  manufacturedDate DateTime? @map("manufactured_date") @db.Date
+  expiryDate      DateTime? @map("expiry_date") @db.Date
+  vvmStatus       String?   @map("vvm_status") @db.VarChar(10)
+  manufacturer    String?   @db.VarChar(200)
+  unitPrice       Decimal?  @map("unit_price") @db.Decimal(10, 4)
+  fundingSource   String?   @map("funding_source") @db.VarChar(100)
+  storageLocation String?   @map("storage_location") @db.VarChar(200)
+  status          String    @default("ACTIVE") @db.VarChar(20)
+  createdById     String?   @map("created_by") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  warehouse     Warehouse     @relation(fields: [warehouseId], references: [id])
+  bin           StorageBin?   @relation(fields: [binId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
+  creator       User?         @relation(fields: [createdById], references: [id])
+
+  transactions  StockTransaction[]
+  dispenseLines DispenseLine[]
+  issuanceLines StockIssuanceLine[]
+  disposalLines DisposalLine[]
+
+  @@map("inventory_batches")
+}
+
+// ----------------------------------------------------
+// 10. Stock Transactions & Dispensing
+// ----------------------------------------------------
+
+model StockTransaction {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId      String   @map("facility_id") @db.Uuid
+  warehouseId     String   @map("warehouse_id") @db.Uuid
+  binId           String?  @map("bin_id") @db.Uuid
+  productId       String   @map("product_id") @db.Uuid
+  batchId         String?  @map("batch_id") @db.Uuid
+  transactionType String   @map("transaction_type") @db.VarChar(30) // RECEIVE, ISSUE, DISPENSE, TRANSFER_OUT, TRANSFER_IN, DISPOSAL, RETURN
+  quantity        Decimal  @db.Decimal(12, 3)
+  quantityBefore  Decimal  @map("quantity_before") @db.Decimal(12, 3)
+  quantityAfter   Decimal  @map("quantity_after") @db.Decimal(12, 3)
+  referenceType   String?  @map("reference_type") @db.VarChar(50)
+  referenceId     String?  @map("reference_id") @db.Uuid
+  patientId       String?  @map("patient_id") @db.Uuid
+  consultationId  String?  @map("consultation_id") @db.Uuid
+  transactionDate DateTime @map("transaction_date") @db.Date
+  notes           String?
+  createdById     String?  @map("created_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  facility     Facility        @relation(fields: [facilityId], references: [id])
+  warehouse    Warehouse       @relation(fields: [warehouseId], references: [id])
+  bin          StorageBin?     @relation(fields: [binId], references: [id])
+  product      Product         @relation(fields: [productId], references: [id])
+  batch        InventoryBatch? @relation(fields: [batchId], references: [id])
+  patient      Patient?        @relation(fields: [patientId], references: [id])
+  consultation Consultations?  @relation(fields: [consultationId], references: [id])
+  creator      User?           @relation(fields: [createdById], references: [id])
+
+  dispenseLines DispenseLine[]
+
+  @@map("stock_transactions")
+}
+
+model DispenseRecord {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId     String   @map("facility_id") @db.Uuid
+  dispenseNumber String?  @map("dispense_number") @db.VarChar(100)
+  consultationId String?  @map("consultation_id") @db.Uuid
+  patientId      String?  @map("patient_id") @db.Uuid
+  dispenseType   String   @map("dispense_type") @db.VarChar(30) // WARD, OUTPATIENT, LGU_PROGRAM
+  destination    String?  @db.VarChar(200)
+  programName    String?  @map("program_name") @db.VarChar(200)
+  dispenseDate   DateTime @map("dispense_date") @db.Date
+  dispenseTime   String   @map("dispense_time") @db.VarChar(30)
+  dispensedById  String   @map("dispensed_by") @db.Uuid
+  notes          String?
+  status         String   @default("COMPLETED") @db.VarChar(30)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  facility     Facility       @relation(fields: [facilityId], references: [id])
+  consultation Consultations? @relation(fields: [consultationId], references: [id])
+  patient      Patient?       @relation(fields: [patientId], references: [id])
+  dispensedBy  User           @relation(fields: [dispensedById], references: [id])
+
+  lines DispenseLine[]
+
+  @@map("dispense_records")
+}
+
+model DispenseLine {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dispenseRecordId   String    @map("dispense_record_id") @db.Uuid
+  medicationOrderId  String?   @map("medication_order_id") @db.Uuid
+  productId          String    @map("product_id") @db.Uuid
+  batchId            String    @map("batch_id") @db.Uuid
+  quantityDispensed  Decimal   @map("quantity_dispensed") @db.Decimal(12, 3)
+  unitOfMeasure      String?   @map("unit_of_measure") @db.VarChar(30)
+  dose               String?   @db.VarChar(100)
+  frequency          String?   @db.VarChar(50)
+  duration           String?   @db.VarChar(100)
+  instructions       String?
+  stockBefore        Decimal   @map("stock_before") @db.Decimal(12, 3)
+  stockAfter         Decimal   @map("stock_after") @db.Decimal(12, 3)
+  stockTransactionId String?   @map("stock_transaction_id") @db.Uuid
+  revertedAt         DateTime? @map("reverted_at") @db.Timestamptz
+  revertReason       String?   @map("revert_reason")
+  revertedById       String?   @map("reverted_by") @db.Uuid
+
+  dispenseRecord   DispenseRecord    @relation(fields: [dispenseRecordId], references: [id], onDelete: Cascade)
+  medicationOrder  MedicationOrder?  @relation(fields: [medicationOrderId], references: [id])
+  product          Product           @relation(fields: [productId], references: [id])
+  batch            InventoryBatch    @relation(fields: [batchId], references: [id])
+  stockTransaction StockTransaction? @relation(fields: [stockTransactionId], references: [id])
+  revertedBy       User?             @relation(fields: [revertedById], references: [id])
+
+  @@map("dispense_lines")
+}
+
+// ----------------------------------------------------
+// 11. Procurement & Purchase
+// ----------------------------------------------------
+
+model Supplier {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String   @db.VarChar(300)
+  contactPerson      String?  @map("contact_person") @db.VarChar(200)
+  email              String?  @db.VarChar(200)
+  phone              String?  @db.VarChar(50)
+  address            String?
+  taxType            String?  @map("tax_type") @db.VarChar(20)
+  withholdingTaxRate Decimal? @map("withholding_tax_rate") @db.Decimal(5, 2)
+  creditTermsDays    Int?     @map("credit_terms_days")
+  creditLimit        Decimal? @map("credit_limit") @db.Decimal(14, 2)
+  status             String   @default("ACTIVE") @db.VarChar(20)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  purchaseOrders PurchaseOrder[]
+  goodsReceipts  GoodsReceipt[]
+  invoices       Invoice[]
+
+  @@map("suppliers")
+}
+
+model Requisition {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId            String    @map("facility_id") @db.Uuid
+  reqNumber             String    @unique @map("req_number") @db.VarChar(100)
+  reqDate               DateTime  @map("req_date") @db.Date
+  reason                String    @db.VarChar(50)
+  preferredDeliveryDate DateTime? @map("preferred_delivery_date") @db.Date
+  status                String    @default("DRAFT") @db.VarChar(20)
+  autoSuggested         Boolean   @default(false) @map("auto_suggested")
+  notes                 String?
+  createdById           String?   @map("created_by") @db.Uuid
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+  creator  User?    @relation(fields: [createdById], references: [id])
+
+  lines          RequisitionLine[]
+  purchaseOrders PurchaseOrder[]
+
+  @@map("requisitions")
+}
+
+model RequisitionLine {
+  id            String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requisitionId String  @map("requisition_id") @db.Uuid
+  productId     String  @map("product_id") @db.Uuid
+  quantity      Decimal @db.Decimal(12, 3)
+  unit          String? @db.VarChar(30)
+
+  requisition Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+
+  @@map("requisition_lines")
+}
+
+model PurchaseOrder {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId        String    @map("facility_id") @db.Uuid
+  poNumber          String    @unique @map("po_number") @db.VarChar(100)
+  requisitionId     String?   @map("requisition_id") @db.Uuid
+  supplierId        String    @map("supplier_id") @db.Uuid
+  orderDate         DateTime  @map("order_date") @db.Date
+  expectedDelivery  DateTime? @map("expected_delivery") @db.Date
+  paymentTermsDays  Int?      @map("payment_terms_days")
+  fundingSource     String?   @map("funding_source") @db.VarChar(100)
+  totalAmount       Decimal?  @map("total_amount") @db.Decimal(14, 2)
+  status            String    @default("DRAFT") @db.VarChar(20)
+  notes             String?
+  createdById       String?   @map("created_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  facility    Facility     @relation(fields: [facilityId], references: [id])
+  requisition Requisition? @relation(fields: [requisitionId], references: [id])
+  supplier    Supplier     @relation(fields: [supplierId], references: [id])
+  creator     User?        @relation(fields: [createdById], references: [id])
+
+  lines         PurchaseOrderLine[]
+  goodsReceipts GoodsReceipt[]
+  invoices      Invoice[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  purchaseOrderId String   @map("purchase_order_id") @db.Uuid
+  productId       String   @map("product_id") @db.Uuid
+  quantityOrdered Decimal  @map("quantity_ordered") @db.Decimal(12, 3)
+  quantityReceived Decimal  @default(0) @map("quantity_received") @db.Decimal(12, 3)
+  unitPrice       Decimal? @map("unit_price") @db.Decimal(10, 4)
+  discountPercent Decimal? @map("discount_percent") @db.Decimal(5, 2)
+  netAmount       Decimal? @map("net_amount") @db.Decimal(14, 2)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+
+  grnLines GoodsReceiptLine[]
+
+  @@map("purchase_order_lines")
+}
+
+model GoodsReceipt {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId      String   @map("facility_id") @db.Uuid
+  grnNumber       String   @unique @map("grn_number") @db.VarChar(100)
+  purchaseOrderId String?  @map("purchase_order_id") @db.Uuid
+  issuanceId      String?  @map("issuance_id") @db.Uuid
+  receiptDate     DateTime @map("receipt_date") @db.Date
+  sourceType      String   @map("source_type") @db.VarChar(20)
+  supplierId      String?  @map("supplier_id") @db.Uuid
+  drNumber        String?  @map("dr_number") @db.VarChar(100)
+  drAttachmentUrl String?  @map("dr_attachment_url") @db.VarChar(500)
+  notes           String?
+  receivedById    String?  @map("received_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  facility      Facility       @relation(fields: [facilityId], references: [id])
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  issuance      StockIssuance? @relation(fields: [issuanceId], references: [id])
+  supplier      Supplier?      @relation(fields: [supplierId], references: [id])
+  receiver      User?          @relation(fields: [receivedById], references: [id])
+
+  lines    GoodsReceiptLine[]
+  invoices Invoice[]
+
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptLine {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  grnId            String    @map("grn_id") @db.Uuid
+  productId        String    @map("product_id") @db.Uuid
+  poLineId         String?   @map("po_line_id") @db.Uuid
+  quantity         Decimal   @db.Decimal(12, 3)
+  batchNumber      String?   @map("batch_number") @db.VarChar(100)
+  lotNumber        String?   @map("lot_number") @db.VarChar(100)
+  manufacturedDate DateTime? @map("manufactured_date") @db.Date
+  expiryDate       DateTime? @map("expiry_date") @db.Date
+  condition        String?   @default("GOOD") @db.VarChar(20)
+  unitPrice        Decimal?  @map("unit_price") @db.Decimal(10, 4)
+  storageLocation  String?   @map("storage_location") @db.VarChar(200)
+  serialNumbers    String[]  @map("serial_numbers")
+
+  goodsReceipt GoodsReceipt       @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  product      Product            @relation(fields: [productId], references: [id])
+  poLine       PurchaseOrderLine? @relation(fields: [poLineId], references: [id])
+
+  @@map("goods_receipt_lines")
+}
+
+model Invoice {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId        String    @map("facility_id") @db.Uuid
+  invoiceNumber     String    @map("invoice_number") @db.VarChar(100)
+  purchaseOrderId   String?   @map("purchase_order_id") @db.Uuid
+  grnId             String?   @map("grn_id") @db.Uuid
+  supplierId        String?   @map("supplier_id") @db.Uuid
+  invoiceDate       DateTime  @map("invoice_date") @db.Date
+  dueDate           DateTime? @map("due_date") @db.Date
+  hasVat            Boolean   @default(false) @map("has_vat")
+  hasWithholding    Boolean   @default(false) @map("has_withholding")
+  subtotal          Decimal?  @db.Decimal(14, 2)
+  vatAmount         Decimal?  @map("vat_amount") @db.Decimal(14, 2)
+  withholdingAmount Decimal?  @map("withholding_amount") @db.Decimal(14, 2)
+  additionalCharges Decimal?  @map("additional_charges") @db.Decimal(14, 2)
+  totalAmount       Decimal?  @map("total_amount") @db.Decimal(14, 2)
+  matchStatus       String?   @default("PENDING") @map("match_status") @db.VarChar(20)
+  status            String    @default("PENDING") @db.VarChar(20)
+  paidAt            DateTime? @map("paid_at") @db.Timestamptz
+  paymentMethod     String?   @map("payment_method") @db.VarChar(50)
+  paymentReference  String?   @map("payment_reference") @db.VarChar(100)
+  createdById       String?   @map("created_by") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  facility      Facility       @relation(fields: [facilityId], references: [id])
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  goodsReceipt  GoodsReceipt?  @relation(fields: [grnId], references: [id])
+  supplier      Supplier?      @relation(fields: [supplierId], references: [id])
+  creator       User?          @relation(fields: [createdById], references: [id])
+
+  @@map("invoices")
+}
+
+// ----------------------------------------------------
+// 12. Stock Issuances & Disposals
+// ----------------------------------------------------
+
+model StockIssuance {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId            String    @map("facility_id") @db.Uuid
+  issuanceNumber        String    @unique @map("issuance_number") @db.VarChar(100)
+  issuanceDate          DateTime  @map("issuance_date") @db.Date
+  sourceFacilityId      String    @map("source_facility_id") @db.Uuid
+  destinationFacilityId String    @map("destination_facility_id") @db.Uuid
+  deliveryDate          DateTime? @map("delivery_date") @db.Date
+  deliveryReference     String?   @map("delivery_reference") @db.VarChar(100)
+  notes                 String?
+  status                String    @default("PENDING") @db.VarChar(20)
+  createdById           String?   @map("created_by") @db.Uuid
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  facility            Facility  @relation("FacilityOwner", fields: [facilityId], references: [id])
+  sourceFacility      Facility  @relation("SourceFacility", fields: [sourceFacilityId], references: [id])
+  destinationFacility Facility  @relation("DestinationFacility", fields: [destinationFacilityId], references: [id])
+  creator             User?     @relation(fields: [createdById], references: [id])
+
+  lines         StockIssuanceLine[]
+  goodsReceipts GoodsReceipt[]
+
+  @@map("stock_issuances")
+}
+
+model StockIssuanceLine {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  issuanceId  String  @map("issuance_id") @db.Uuid
+  productId   String  @map("product_id") @db.Uuid
+  batchId     String  @map("batch_id") @db.Uuid
+  quantity    Decimal @db.Decimal(12, 3)
+  unit        String? @db.VarChar(30)
+
+  issuance StockIssuance  @relation(fields: [issuanceId], references: [id], onDelete: Cascade)
+  product  Product        @relation(fields: [productId], references: [id])
+  batch    InventoryBatch @relation(fields: [batchId], references: [id])
+
+  @@map("stock_issuance_lines")
+}
+
+model Disposal {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId     String   @map("facility_id") @db.Uuid
+  disposalNumber String   @unique @map("disposal_number") @db.VarChar(100)
+  disposalDate   DateTime @map("disposal_date") @db.Date
+  reason         String   @db.VarChar(50)
+  reasonNotes    String?  @map("reason_notes")
+  witness        String?  @db.VarChar(200)
+  disposalMethod String?  @map("disposal_method") @db.VarChar(50)
+  status         String   @default("DRAFT") @db.VarChar(20)
+  createdById    String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+  creator  User?    @relation(fields: [createdById], references: [id])
+
+  lines DisposalLine[]
+
+  @@map("disposals")
+}
+
+model DisposalLine {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  disposalId String  @map("disposal_id") @db.Uuid
+  productId  String  @map("product_id") @db.Uuid
+  batchId    String  @map("batch_id") @db.Uuid
+  quantity   Decimal @db.Decimal(12, 3)
+
+  disposal Disposal       @relation(fields: [disposalId], references: [id], onDelete: Cascade)
+  product  Product        @relation(fields: [productId], references: [id])
+  batch    InventoryBatch @relation(fields: [batchId], references: [id])
+
+  @@map("disposal_lines")
+}
+
+// ----------------------------------------------------
+// 13. Referrals & Surveillance
+// ----------------------------------------------------
+
+model Referral {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultationId        String    @map("consultation_id") @db.Uuid
+  patientId             String    @map("patient_id") @db.Uuid
+  referringFacilityId   String    @map("referring_facility_id") @db.Uuid
+  referralType          String    @map("referral_type") @db.VarChar(20)
+  urgency               String    @db.VarChar(20)
+  referralReason        String    @map("referral_reason")
+  clinicalSummary       String?   @map("clinical_summary")
+  consentLevel          String?   @map("consent_level") @db.VarChar(20)
+  consentRecordedAt     DateTime? @map("consent_recorded_at") @db.Timestamptz
+  receivingFacilityId   String?   @map("receiving_facility_id") @db.Uuid
+  receivingOrgSlug      String?   @map("receiving_org_slug") @db.VarChar(100)
+  receivingFacilityName String?   @map("receiving_facility_name") @db.VarChar(300)
+  referralPacket        Json?     @map("referral_packet")
+  status                String    @default("PENDING") @db.VarChar(20)
+  acceptedAt            DateTime? @map("accepted_at") @db.Timestamptz
+  declinedAt            DateTime? @map("declined_at") @db.Timestamptz
+  declineReason         String?   @map("decline_reason")
+  outcomeNotes          String?   @map("outcome_notes")
+  outcomeSentAt         DateTime? @map("outcome_sent_at") @db.Timestamptz
+  createdById           String?   @map("created_by") @db.Uuid
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  consultation      Consultations @relation(fields: [consultationId], references: [id])
+  patient           Patient       @relation(fields: [patientId], references: [id])
+  referringFacility Facility      @relation("ReferringFacility", fields: [referringFacilityId], references: [id])
+  receivingFacility Facility?     @relation("ReceivingFacility", fields: [receivingFacilityId], references: [id])
+  creator           User?         @relation(fields: [createdById], references: [id])
+
+  @@map("referrals")
+}
+
+model DiseaseAlertThreshold {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId     String   @map("facility_id") @db.Uuid
+  icd10Code      String   @map("icd10_code") @db.VarChar(10)
+  diseaseName    String?  @map("disease_name") @db.VarChar(200)
+  thresholdCount Int      @default(5) @map("threshold_count")
+  timeWindowDays Int      @map("time_window_days")
+  classification String?  @default("ANY") @db.VarChar(20)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdById    String?  @map("created_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+  creator  User?    @relation(fields: [createdById], references: [id])
+
+  alerts DiseaseAlert[]
+
+  @@map("disease_alert_thresholds")
+}
+
+model DiseaseAlert {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId      String    @map("facility_id") @db.Uuid
+  thresholdId     String?   @map("threshold_id") @db.Uuid
+  icd10Code       String    @map("icd10_code") @db.VarChar(10)
+  caseCount       Int       @map("case_count")
+  status          String    @default("TRIGGERED") @db.VarChar(20)
+  triggeredAt     DateTime  @default(now()) @map("triggered_at") @db.Timestamptz
+  acknowledgedById String?   @map("acknowledged_by") @db.Uuid
+  acknowledgedAt  DateTime? @map("acknowledged_at") @db.Timestamptz
+  actionTaken     String?   @map("action_taken")
+  resolvedById    String?   @map("resolved_by") @db.Uuid
+  resolvedAt      DateTime? @map("resolved_at") @db.Timestamptz
+  resolutionNotes String?   @map("resolution_notes")
+
+  facility     Facility               @relation(fields: [facilityId], references: [id])
+  threshold    DiseaseAlertThreshold? @relation(fields: [thresholdId], references: [id])
+  acknowledged User?                  @relation("AlertAcknowledgeBy", fields: [acknowledgedById], references: [id])
+  resolved     User?                  @relation("AlertResolveBy", fields: [resolvedById], references: [id])
+
+  @@map("disease_alerts")
+}
+
+// ----------------------------------------------------
+// 14. Notifications & Logs
+// ----------------------------------------------------
+
+model Notification {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId    String?   @map("facility_id") @db.Uuid
+  recipientId   String?   @map("recipient_id") @db.Uuid
+  type          String    @db.VarChar(50)
+  title         String    @db.VarChar(300)
+  body          String
+  redirectRoute String?   @map("redirect_route") @db.VarChar(300)
+  isRead        Boolean   @default(false) @map("is_read")
+  readAt        DateTime? @map("read_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  facility  Facility? @relation(fields: [facilityId], references: [id])
+  recipient User?     @relation(fields: [recipientId], references: [id])
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id                 BigInt    @id @default(autoincrement())
+  userId             String?   @map("user_id") @db.Uuid
+  facilityId         String?   @map("facility_id") @db.Uuid
+  action             String    @db.VarChar(50)
+  tableName          String?   @map("table_name") @db.VarChar(100)
+  recordId           String?   @map("record_id") @db.Uuid
+  oldValues          Json?     @map("old_values")
+  newValues          Json?     @map("new_values")
+  ipAddress          String?   @map("ip_address") // Map INET as string
+  userAgent          String?   @map("user_agent") @db.VarChar(500)
+  tempAccessGrantId  String?   @map("temp_access_grant_id") @db.VarChar(100)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user     User?     @relation(fields: [userId], references: [id])
+  facility Facility? @relation(fields: [facilityId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// ----------------------------------------------------
+// 15. Plugins & Extensibility
+// ----------------------------------------------------
+
+model InstalledPlugin {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId  String?  @map("facility_id") @db.Uuid
+  orgId       String?  @map("org_id") @db.Uuid
+  pluginId    String   @map("plugin_id") @db.VarChar(100)
+  installedById String?  @map("installed_by") @db.Uuid
+  installedAt DateTime @default(now()) @map("installed_at") @db.Timestamptz
+  config      Json?    @default("{}")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  facility    Facility?    @relation(fields: [facilityId], references: [id])
+  organization Organization? @relation(fields: [orgId], references: [id])
+  installedBy  User?        @relation(fields: [installedById], references: [id])
+
+  @@unique([orgId, pluginId])
+  @@map("installed_plugins")
+}
+
+model FhsisServiceRecord {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consultationId  String   @map("consultation_id") @db.Uuid
+  patientId       String   @map("patient_id") @db.Uuid
+  facilityId      String   @map("facility_id") @db.Uuid
+  serviceType     String   @map("service_type") @db.VarChar(50)
+  serviceDate     DateTime @map("service_date") @db.Date
+  reportingPeriod String   @map("reporting_period") @db.VarChar(7)
+  data            Json
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  consultation Consultations @relation(fields: [consultationId], references: [id])
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  facility     Facility      @relation(fields: [facilityId], references: [id])
+
+  @@index([facilityId, serviceType, reportingPeriod])
+  @@map("fhsis_service_records")
+}
+
+// ====================================================
+// BetterAuth Models for Staff EMR
+// ====================================================
+
+model Session {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz
+  token       String   @unique @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  ipAddress   String?  @map("ip_address") @db.VarChar(100)
+  userAgent   String?  @map("user_agent") @db.VarChar(500)
+  userId      String   @map("user_id") @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Custom Session fields resolved in databaseHooks
+  facilityId  String?  @map("facility_id") @db.Uuid
+  orgId       String?  @map("org_id") @db.Uuid
+  roleName    String?  @map("role_name") @db.VarChar(100)
+  permissions String[] @map("permissions")
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId             String    @map("account_id") @db.VarChar(255)
+  providerId            String    @map("provider_id") @db.VarChar(100)
+  userId                String    @map("user_id") @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token") @db.Text
+  refreshToken          String?   @map("refresh_token") @db.Text
+  idToken               String?   @map("id_token") @db.Text
+  expiresAt             DateTime? @map("expires_at") @db.Timestamptz
+  password              String?   @map("password") @db.VarChar(300)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([providerId, accountId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identifier String    @db.VarChar(255)
+  value      String    @db.VarChar(255)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime? @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("verifications")
+}
+
+// ====================================================
+// BetterAuth Models for Patients
+// ====================================================
+
+model PatientSession {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  token     String   @unique @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  ipAddress String?  @map("ip_address") @db.VarChar(100)
+  userAgent String?  @map("user_agent") @db.VarChar(500)
+  patientId String   @map("patient_id") @db.Uuid
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  facilityId String?  @map("facility_id") @db.Uuid
+  orgId      String?  @map("org_id") @db.Uuid
+
+  @@map("patient_sessions")
+}
+
+model PatientAccount {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId             String    @map("account_id") @db.VarChar(255)
+  providerId            String    @map("provider_id") @db.VarChar(100)
+  patientId             String    @map("patient_id") @db.Uuid
+  patient               Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token") @db.Text
+  refreshToken          String?   @map("refresh_token") @db.Text
+  idToken               String?   @map("id_token") @db.Text
+  expiresAt             DateTime? @map("expires_at") @db.Timestamptz
+  password              String?   @map("password") @db.VarChar(300)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([providerId, accountId])
+  @@map("patient_accounts")
+}
+
+model PatientVerification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identifier String    @db.VarChar(255)
+  value      String    @db.VarChar(255)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime? @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("patient_verifications")
+}
+
+model QueueEntry {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facilityId     String         @map("facility_id") @db.Uuid
+  visitId        String?        @map("visit_id") @db.Uuid
+  patientId      String         @map("patient_id") @db.Uuid
+  ticketNumber   String         @map("ticket_number") @db.VarChar(20)
+  status         String         @default("WAITING") @db.VarChar(20) // WAITING, CALLING, COMPLETED, SKIPPED
+  calledRoom     String?        @map("called_room") @db.VarChar(50)
+  doctorId       String?        @map("doctor_id") @db.Uuid
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime       @default(now()) @map("updated_at") @db.Timestamptz
+
+  facility       Facility       @relation(fields: [facilityId], references: [id])
+  patient        Patient        @relation(fields: [patientId], references: [id])
+  doctor         User?          @relation(fields: [doctorId], references: [id])
+
+  @@map("queue_entries")
+}
