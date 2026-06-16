@@ -5,6 +5,7 @@ import { useAppointments } from "../../../lib/hooks/api/useAppointments";
 import { usePatients } from "../../../lib/hooks/api/usePatients";
 import { useSubmitNewVisit } from "../../../lib/hooks/api/useConsultations";
 import { useMedicinesSearch } from "../../../lib/hooks/api/useMedicines";
+import { getStaffSession } from "../../../lib/api/auth";
 
 interface RoomPageProps {
   params: { id: string };
@@ -21,8 +22,61 @@ const ICD10_CODES = [
   { value: "J45",   label: "J45 — Asthma" },
 ];
 
+function getRoleIcon(roleName: string) {
+  const name = roleName || "Attending Doctor";
+  if (name.includes("Admin") || name.includes("Manager")) {
+    return (
+      <svg viewBox="0 0 15 15" style={{ width: "10px", height: "10px", fill: "currentColor", flexShrink: 0 }}>
+        <path d="M7.5 1.5L2 4v4c0 3 2.5 5.5 5.5 6.5C10.5 13.5 13 11 13 8V4z" />
+      </svg>
+    );
+  }
+  if (name.includes("Nurse")) {
+    return (
+      <svg viewBox="0 0 15 15" style={{ width: "10px", height: "10px", fill: "currentColor", flexShrink: 0 }}>
+        <rect x="2" y="1.5" width="11" height="12" rx="2" />
+        <path d="M7.5 5v4M5.5 7h4" />
+      </svg>
+    );
+  }
+  if (name.includes("Pharmacist")) {
+    return (
+      <svg viewBox="0 0 15 15" style={{ width: "10px", height: "10px", fill: "currentColor", flexShrink: 0 }}>
+        <path d="M5 2h5l2 3H3L5 2z" />
+        <rect x="2" y="5" width="11" height="8" rx="1.5" />
+        <path d="M5 8.5h5M7.5 7v3" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 15 15" style={{ width: "10px", height: "10px", fill: "currentColor", flexShrink: 0 }}>
+      <circle cx="7.5" cy="4.5" r="2.5" />
+      <path d="M2.5 13c0-2.8 2.2-5 5-5s5 2.2 5 5" />
+      <path d="M7.5 8v3M6 9.5h3" />
+    </svg>
+  );
+}
+
 export default function DoctorRoomPage({ params }: RoomPageProps) {
   const visitId = params.id;
+
+  const [session, setSession] = React.useState<any>(null);
+  React.useEffect(() => {
+    getStaffSession()
+      .then((s) => setSession(s))
+      .catch((err) => console.warn("Failed to retrieve staff session:", err));
+  }, []);
+
+  const doctorName = session?.user?.name ?? "Dr. Santos";
+  const doctorRole = session?.session?.roleName ?? "Attending Doctor";
+  const doctorInitials = session?.user?.name
+    ? session.user.name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "DR";
 
   // ── Data ──────────────────────────────────────────────────────────────
   const { data: appointments, isLoading: apptsLoading } = useAppointments();
@@ -43,7 +97,25 @@ export default function DoctorRoomPage({ params }: RoomPageProps) {
   const [isCameraOff,   setIsCameraOff]   = React.useState(false);
   const [isScreenShare, setIsScreenShare] = React.useState(false);
   const [panelOpen,     setPanelOpen]     = React.useState(true);
-  const [isDark,        setIsDark]        = React.useState(false);
+  const [isDark,        setIsDark]        = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    const saved = localStorage.getItem("medistock-theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return saved === "dark" || (!saved && prefersDark);
+  });
+  const [activeTab,     setActiveTab]     = React.useState<"soap" | "patient" | "chat">("soap");
+
+  // ── Chat state ─────────────────────────────────────────────────────────
+  const [chatMessages, setChatMessages] = React.useState<
+    Array<{ sender: "doctor" | "patient" | "system"; text: string; time: string }>
+  >([
+    { sender: "patient", text: "Good morning, doc. I took my meds today.", time: "9:02 AM" },
+    { sender: "doctor", text: "Good morning, Juan! Great to hear. Can you describe the headaches for me?", time: "9:03 AM" },
+    { sender: "patient", text: "They're usually dull, around 6/10. Mostly in the morning when I wake up.", time: "9:04 AM" },
+    { sender: "doctor", text: "Thank you. Are you still following the DASH diet we discussed?", time: "9:05 AM" },
+    { sender: "patient", text: "Honestly not consistently, doc. Work has been very stressful lately.", time: "9:06 AM" },
+  ]);
+  const [chatInput, setChatInput] = React.useState("");
 
   // ── Webcam ─────────────────────────────────────────────────────────────
   const localVideoRef = React.useRef<HTMLVideoElement | null>(null);
@@ -71,6 +143,15 @@ export default function DoctorRoomPage({ params }: RoomPageProps) {
   React.useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
+
+  const handleToggleTheme = () => {
+    setIsDark((prev) => {
+      const next = !prev;
+      document.documentElement.classList.toggle("dark", next);
+      localStorage.setItem("medistock-theme", next ? "dark" : "light");
+      return next;
+    });
+  };
 
   // ── Session timer ──────────────────────────────────────────────────────
   const [secs, setSecs] = React.useState(0);
@@ -213,15 +294,25 @@ export default function DoctorRoomPage({ params }: RoomPageProps) {
     }
   };
 
+  const handleSendChat = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!chatInput.trim()) return;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    setChatMessages((prev) => [
+      ...prev,
+      { sender: "doctor", text: chatInput.trim(), time: timeStr },
+    ]);
+    setChatInput("");
+  };
+
   // ── Derived display ────────────────────────────────────────────────────
   const patientName = patient ? `${patient.firstName} ${patient.lastName}` : "Patient";
   const patientInitials = patient
     ? `${patient.firstName?.[0] ?? ""}${patient.lastName?.[0] ?? ""}`.toUpperCase()
     : "PT";
 
-  // Doctor initials from session would normally come from context;
-  // fall back to "DR" as a sensible default for the PiP/avatar
-  const doctorInitials = "DR";
+
 
   const todayStr = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
@@ -230,13 +321,13 @@ export default function DoctorRoomPage({ params }: RoomPageProps) {
       <div className="vr-loading">
         <div className="vr-spinner" />
         <p>Establishing secure call room…</p>
-        <style>{`
+        <style dangerouslySetInnerHTML={{ __html: `
           .vr-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;
             height:100vh;gap:14px;background:var(--surface);color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif}
           .vr-spinner{width:36px;height:36px;border:3px solid var(--border-subtle);
             border-top-color:var(--accent);border-radius:50%;animation:spin .85s linear infinite}
           @keyframes spin{to{transform:rotate(360deg)}}
-        `}</style>
+        ` }} />
       </div>
     );
   }
@@ -244,34 +335,12 @@ export default function DoctorRoomPage({ params }: RoomPageProps) {
   return (
     <>
       {/* ════ STYLES ════════════════════════════════════════════════════════ */}
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         :root{
-          --accent:#6C63FF;--accent-light:#EEEDFE;--accent-mid:#8B85FF;
-          --ink:#1A1A2E;--muted:#6B6B8A;--faint:#9999B3;
-          --surface:#F5F7FB;--white:#FFFFFF;
-          --card-shadow:0 2px 16px rgba(108,99,255,0.07),0 1px 3px rgba(0,0,0,0.04);
-          --card-shadow-hover:0 6px 28px rgba(108,99,255,0.13),0 2px 8px rgba(0,0,0,0.06);
-          --rsm:8px;--rmd:12px;--rlg:18px;--rxl:28px;
-          --warn-bg:#fff8e6;--warn-text:#9a6200;
-          --crit-bg:#fef0f0;--crit-text:#a03030;
-          --info-bg:#eff6ff;--info-text:#1d4ed8;
-          --border-subtle:rgba(108,99,255,0.08);
-          --input-bg:var(--surface);--input-focus-bg:#FFFFFF;
-          --modal-overlay-bg:rgba(26,26,46,.4);
           --video-bg:#0d0d1a;--video-ctrl:#1e1e36;--video-ctrl-hover:#2a2a48;
         }
         html.dark{
-          --accent:#8880FF;--accent-light:rgba(136,128,255,0.13);--accent-mid:#A09AFF;
-          --ink:#CDD9E5;--muted:#768390;--faint:#444C56;
-          --surface:#0D1117;--white:#161B22;
-          --card-shadow:0 1px 2px rgba(0,0,0,0.5),0 4px 20px rgba(0,0,0,0.45);
-          --warn-bg:rgba(251,191,36,0.1);--warn-text:#E3B341;
-          --crit-bg:rgba(248,113,113,0.1);--crit-text:#FF7B72;
-          --info-bg:rgba(96,165,250,0.1);--info-text:#79C0FF;
-          --border-subtle:rgba(255,255,255,0.06);
-          --input-bg:#21262D;--input-focus-bg:#2D333B;
-          --modal-overlay-bg:rgba(0,0,0,0.7);
           --video-bg:#090910;--video-ctrl:#131320;--video-ctrl-hover:#1e1e32;
         }
         html,body{height:100%;overflow:hidden}
@@ -523,7 +592,71 @@ export default function DoctorRoomPage({ params }: RoomPageProps) {
         .tc-toast-inner{display:flex;align-items:center;gap:10px;padding:12px 18px;
           font-size:13px;font-weight:500;color:white;font-family:'DM Sans',sans-serif}
         .tc-toast-inner svg{width:14px;height:14px;fill:none;stroke:white;stroke-width:2.5;stroke-linecap:round;flex-shrink:0}
-      `}</style>
+
+        /* right panel tabs */
+        .tc-right-tabs{
+          display:flex;border-bottom:1px solid var(--border-subtle);
+          flex-shrink:0;background:var(--white);
+        }
+        .tc-tab{
+          flex:1;padding:12px 8px;font-size:12px;font-weight:500;color:var(--muted);
+          cursor:pointer;text-align:center;border-bottom:2px solid transparent;
+          transition:color .15s,border-color .15s;margin-bottom:-1px;
+          background:none;border:none;outline:none;font-family:'Sora',sans-serif;
+        }
+        .tc-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+        .tc-tab:hover:not(.active){color:var(--ink)}
+        .tc-pane{display:none;flex:1;overflow-y:auto;padding:16px}
+        .tc-pane.active{display:flex;flex-direction:column;gap:12px}
+
+        /* patient context card */
+        .pt-context-card{background:var(--surface);border-radius:var(--rmd);padding:14px}
+        .pt-context-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+        .pt-context-avatar{width:40px;height:40px;border-radius:11px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+        .pt-context-name{font-size:14px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif}
+        .pt-context-sub{font-size:11px;color:var(--faint);margin-top:2px}
+        .pt-context-meta{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border-subtle);border-radius:var(--rsm);overflow:hidden}
+        .pt-meta-cell{background:var(--white);padding:8px 10px}
+        .pt-meta-key{font-size:10px;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+        .pt-meta-val{font-size:12.5px;font-weight:600;color:var(--ink)}
+
+        /* vitals row */
+        .vital-row-mini{display:flex;flex-direction:column;gap:5px}
+        .vital-mini{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surface);border-radius:var(--rsm)}
+        .vital-mini-label{font-size:11px;font-weight:500;color:var(--muted)}
+        .vital-mini-val{font-size:13px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif}
+        .vital-mini-val.warn{color:var(--warn-text)}
+        .vital-mini-val.crit{color:var(--crit-text)}
+
+        /* rx mini list */
+        .rx-mini{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border-radius:var(--rsm)}
+        .rx-mini-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+        .rx-mini-name{font-size:12px;font-weight:600;color:var(--ink);flex:1}
+        .rx-mini-dose{font-size:11px;color:var(--muted)}
+
+        /* notes / chat */
+        .chat-area{display:flex;flex-direction:column;gap:10px;flex:1;overflow-y:auto}
+        .chat-msg{display:flex;gap:8px;align-items:flex-start}
+        .chat-msg.patient{flex-direction:row-reverse}
+        .chat-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:9px;font-weight:700;color:white;flex-shrink:0;margin-top:2px}
+        .chat-bubble{max-width:78%;padding:8px 12px;border-radius:12px;font-size:12.5px;line-height:1.55}
+        .chat-bubble.dr{background:var(--accent);color:white;border-radius:12px 12px 4px 12px}
+        .chat-bubble.pt{background:var(--surface);color:var(--ink);border-radius:12px 12px 12px 4px}
+        .chat-time{font-size:10px;color:var(--faint);margin-top:4px;text-align:right}
+        .chat-time.pt{text-align:left}
+        .chat-input-row{display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border-subtle);margin-top:4px;flex-shrink:0}
+        .chat-input{flex:1;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:8px 12px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:box-shadow .2s}
+        .chat-input:focus{box-shadow:0 0 0 2px var(--accent);background:var(--input-focus-bg)}
+        .chat-input::placeholder{color:var(--faint)}
+        .chat-send{width:34px;height:34px;border-radius:var(--rsm);background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+        .chat-send:hover{background:var(--accent-mid)}
+        .chat-send svg{width:14px;height:14px;stroke:white;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+        /* Adjustments for custom form layout inside pane-soap */
+        #pane-soap .panel-head{padding:0 0 12px 0}
+        #pane-soap .panel-body{padding:0;overflow:visible}
+        .section-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+      ` }} />
 
       {/* ════ TOPBAR ═════════════════════════════════════════════════════ */}
       <div className="tc-topbar">
@@ -552,9 +685,14 @@ export default function DoctorRoomPage({ params }: RoomPageProps) {
           </button>
           <div className="tc-tb-divider" />
           <div className="tc-tb-avatar">{doctorInitials}</div>
-          <div className="tc-tb-name">Dr. Santos</div>
-          <span className="pill-ok">Internal Medicine</span>
-          <button className="tc-icon-btn" onClick={() => setIsDark((d) => !d)} title="Toggle theme" id="theme-toggle-btn">
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-start" }}>
+            <div className="tc-tb-name" style={{ lineHeight: 1.1 }}>{doctorName}</div>
+            <span className="pill-ok" style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "1px 6px" }}>
+              {getRoleIcon(doctorRole)}
+              {doctorRole}
+            </span>
+          </div>
+          <button className="tc-icon-btn" onClick={handleToggleTheme} title="Toggle theme" id="theme-toggle-btn">
             <svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z"/></svg>
           </button>
         </div>
@@ -665,26 +803,52 @@ export default function DoctorRoomPage({ params }: RoomPageProps) {
 
         {/* ── RIGHT: CONSULTATION FORM ────────────────────────────────── */}
         <div className="tc-right" id="tc-right">
-          <div className="panel-head">
-            <div className="panel-head-title">Record New Visit</div>
-            <div className="panel-head-sub">Teleconsultation · {todayStr}</div>
-            <div className="panel-head-patient">
-              <div className="panel-pt-avatar">{patientInitials}</div>
-              <div>
-                <div className="panel-pt-name">{patientName}</div>
-                <div className="panel-pt-sub">
-                  {appointment?.id ? `MRN-${appointment.id.slice(-7).toUpperCase()}` : "MRN-0000000"}
-                  {patient?.sex && ` · ${patient.sex === "MALE" ? "M" : "F"}`}
-                  {patient?.birthDate && ` · ${new Date().getFullYear() - new Date(patient.birthDate).getFullYear()}y`}
-                  {(patient as any)?.allergies && (
-                    <> · <span style={{ color: "var(--crit-text)", fontWeight: 600 }}>⚠ {(patient as any).allergies}</span></>
-                  )}
+          <div className="tc-right-tabs">
+            <button
+              type="button"
+              className={`tc-tab${activeTab === "soap" ? " active" : ""}`}
+              onClick={() => setActiveTab("soap")}
+            >
+              SOAP Note
+            </button>
+            <button
+              type="button"
+              className={`tc-tab${activeTab === "patient" ? " active" : ""}`}
+              onClick={() => setActiveTab("patient")}
+            >
+              Patient
+            </button>
+            <button
+              type="button"
+              className={`tc-tab${activeTab === "chat" ? " active" : ""}`}
+              onClick={() => setActiveTab("chat")}
+            >
+              Chat
+            </button>
+          </div>
+
+          {/* ─ SOAP PANE ─ */}
+          <div className={`tc-pane${activeTab === "soap" ? " active" : ""}`} id="pane-soap">
+            <div className="panel-head">
+              <div className="panel-head-title">Record New Visit</div>
+              <div className="panel-head-sub">Teleconsultation · {todayStr}</div>
+              <div className="panel-head-patient">
+                <div className="panel-pt-avatar">{patientInitials}</div>
+                <div>
+                  <div className="panel-pt-name">{patientName}</div>
+                  <div className="panel-pt-sub">
+                    {appointment?.id ? `MRN-${appointment.id.slice(-7).toUpperCase()}` : "MRN-0000000"}
+                    {patient?.sex && ` · ${patient.sex === "MALE" ? "M" : "F"}`}
+                    {patient?.birthDate && ` · ${new Date().getFullYear() - new Date(patient.birthDate).getFullYear()}y`}
+                    {(patient as any)?.allergies && (
+                      <> · <span style={{ color: "var(--crit-text)", fontWeight: 600 }}>⚠ {(patient as any).allergies}</span></>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <form className="panel-body" onSubmit={handleSave} id="soap-form">
+            <form className="panel-body" onSubmit={handleSave} id="soap-form">
 
             {/* ── 1. VITAL SIGNS ──────────────────────────────────────── */}
             <div className="form-section">
@@ -904,6 +1068,156 @@ export default function DoctorRoomPage({ params }: RoomPageProps) {
             </div>
 
           </form>
+          </div>
+
+          {/* ─ PATIENT PANE ─ */}
+          <div className={`tc-pane${activeTab === "patient" ? " active" : ""}`} id="pane-patient">
+            {patient && (
+              <div className="pt-context-card">
+                <div className="pt-context-head">
+                  <div className="pt-context-avatar">{patientInitials}</div>
+                  <div>
+                    <div className="pt-context-name">{patientName}</div>
+                    <div className="pt-context-sub">
+                      {appointment?.id ? `MRN-${appointment.id.slice(-7).toUpperCase()}` : "MRN-0000000"}
+                      {patient.sex && ` · ${patient.sex === "MALE" ? "M" : "F"}`}
+                      {patient.birthDate && ` · ${new Date().getFullYear() - new Date(patient.birthDate).getFullYear()}y`}
+                    </div>
+                    <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
+                      <span className="pill-ok">Active</span>
+                      <span className="pill-ok" style={{ background: "var(--warn-bg)", color: "var(--warn-text)" }}>Hypertension</span>
+                      {(patient as any).allergies && (
+                        <span className="pill-ok" style={{ background: "var(--crit-bg)", color: "var(--crit-text)" }}>Allergy</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-context-meta">
+                  <div className="pt-meta-cell">
+                    <div className="pt-meta-key">Attending</div>
+                    <div className="pt-meta-val">Dr. Santos</div>
+                  </div>
+                  <div className="pt-meta-cell">
+                    <div className="pt-meta-key">Last Visit</div>
+                    <div className="pt-meta-val">{todayStr}</div>
+                  </div>
+                  <div className="pt-meta-cell">
+                    <div className="pt-meta-key">Phone</div>
+                    <div className="pt-meta-val">{patient.contactNumber || "+63 917 555 0191"}</div>
+                  </div>
+                  <div className="pt-meta-cell">
+                    <div className="pt-meta-key">Civil Status</div>
+                    <div className="pt-meta-val">{patient.civilStatus || "Married"}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div className="section-label">
+                Latest Vitals <span style={{ fontSize: 10, color: "var(--faint)", fontWeight: 400 }}>{todayStr}</span>
+              </div>
+              <div className="vital-row-mini">
+                <div className="vital-mini">
+                  <span className="vital-mini-label">Blood Pressure</span>
+                  <span className="vital-mini-val warn">{bp || "120/80"} mmHg</span>
+                </div>
+                <div className="vital-mini">
+                  <span className="vital-mini-label">Heart Rate</span>
+                  <span className="vital-mini-val">{hr || "72"} bpm</span>
+                </div>
+                <div className="vital-mini">
+                  <span className="vital-mini-label">Temperature</span>
+                  <span className="vital-mini-val">{temp || "37.0"}°C</span>
+                </div>
+                <div className="vital-mini">
+                  <span className="vital-mini-label">SpO₂</span>
+                  <span className="vital-mini-val">{spo2 || "99"}%</span>
+                </div>
+                <div className="vital-mini">
+                  <span className="vital-mini-label">Weight</span>
+                  <span className="vital-mini-val">{weight || "70"} kg</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="section-label">Active Prescriptions</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {rxList.length > 0 ? (
+                  rxList.map((rx, idx) => (
+                    <div className="rx-mini" key={idx}>
+                      <div className="rx-mini-dot" />
+                      <div className="rx-mini-name">{rx.medicineName}{rx.brand ? ` (${rx.brand})` : ""}</div>
+                      <div className="rx-mini-dose">{rx.dose} · {rx.frequency}</div>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div className="rx-mini">
+                      <div className="rx-mini-dot" />
+                      <div className="rx-mini-name">Amlodipine 10mg</div>
+                      <div className="rx-mini-dose">1× daily</div>
+                    </div>
+                    <div className="rx-mini">
+                      <div className="rx-mini-dot" />
+                      <div className="rx-mini-name">Hydrochlorothiazide 25mg</div>
+                      <div className="rx-mini-dose">1× daily</div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {patient && (patient as any).allergies && (
+              <div>
+                <div className="section-label">Allergies &amp; Alerts</div>
+                <div style={{ background: "var(--crit-bg)", borderRadius: "var(--rsm)", padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <svg style={{ width: 14, height: 14, stroke: "var(--crit-text)", fill: "none", strokeWidth: 2, strokeLinecap: "round", flexShrink: 0 }} viewBox="0 0 14 14">
+                    <path d="M7 1.5l5.5 10h-11z" />
+                    <path d="M7 4.5v3" />
+                    <circle cx="7" cy="9.5" r="0.5" fill="var(--crit-text)" />
+                  </svg>
+                  <span style={{ fontSize: 12, color: "var(--crit-text)", fontWeight: 500 }}>
+                    ⚠ {(patient as any).allergies}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ─ CHAT PANE ─ */}
+          <div className={`tc-pane${activeTab === "chat" ? " active" : ""}`} id="pane-chat">
+            <div className="chat-area" id="chat-area">
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`chat-msg${msg.sender === "doctor" ? " patient" : ""}`}>
+                  <div className="chat-avatar" style={{ background: msg.sender === "doctor" ? "var(--accent)" : "var(--accent-mid)" }}>
+                    {msg.sender === "doctor" ? doctorInitials : patientInitials}
+                  </div>
+                  <div>
+                    <div className={`chat-bubble ${msg.sender === "doctor" ? "dr" : "pt"}`}>
+                      {msg.text}
+                    </div>
+                    <div className={`chat-time${msg.sender === "patient" ? " pt" : ""}`}>{msg.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ flex: 1 }} />
+            <form onSubmit={handleSendChat} className="chat-input-row">
+              <input
+                className="chat-input"
+                id="chat-input"
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Type a message…"
+              />
+              <button type="submit" className="chat-send">
+                <svg viewBox="0 0 14 14"><path d="M1.5 7l11-5.5-5.5 11L6 7.5 1.5 7zM6 7.5L12.5 1.5"/></svg>
+              </button>
+            </form>
+          </div>
 
           {/* Footer */}
           <div className="panel-foot">
