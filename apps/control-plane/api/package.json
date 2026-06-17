@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
-    "start": "npx prisma db push --schema=../../packages/database/prisma/control-plane.schema.prisma --accept-data-loss && node dist/main.js"
+    "start": "npx prisma migrate deploy --schema=../../packages/database/prisma/control-plane.schema.prisma && node dist/main.js"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.6.18",
