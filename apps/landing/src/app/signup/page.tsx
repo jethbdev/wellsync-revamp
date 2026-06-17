@@ -24,6 +24,24 @@ export default function LandingSignup() {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
 
+  const getBaseDomain = () => {
+    if (typeof window === "undefined") return "localhost";
+    return window.location.hostname.replace(/^(landing|www)\./, "");
+  };
+
+  const getApiUrl = () => {
+    if (typeof window === "undefined") return "";
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL;
+    }
+    const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isDev) {
+      return "http://localhost:4001";
+    } else {
+      return `https://api.${getBaseDomain()}`;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!orgName || !adminFirstName || !adminLastName || !email || !password) return;
@@ -31,7 +49,8 @@ export default function LandingSignup() {
     setErrorMsg("");
 
     try {
-      const res = await fetch("http://localhost:4001/api/provision", {
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/provision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

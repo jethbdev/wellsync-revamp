@@ -11,6 +11,50 @@ export default function LandingLogin() {
   const [errorMsg, setErrorMsg] = React.useState("");
   const [orgsList, setOrgsList] = React.useState<any[]>([]);
 
+  const getBaseDomain = () => {
+    if (typeof window === "undefined") return "localhost";
+    return window.location.hostname.replace(/^(landing|www)\./, "");
+  };
+
+  const getRedirectUrl = (slug: string, role: string, userEmail: string) => {
+    if (typeof window === "undefined") return "";
+    const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isDev) {
+      const port = role === "staff" ? "3000" : "3002";
+      return `http://localhost:${port}/login?tenant=${slug}&email=${encodeURIComponent(userEmail)}`;
+    } else {
+      const baseDomain = getBaseDomain();
+      if (role === "staff") {
+        return `https://${slug}.${baseDomain}/login?tenant=${slug}&email=${encodeURIComponent(userEmail)}`;
+      } else {
+        return `https://${slug}-patient.${baseDomain}/login?tenant=${slug}&email=${encodeURIComponent(userEmail)}`;
+      }
+    }
+  };
+
+  const getApiUrl = () => {
+    if (typeof window === "undefined") return "";
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL;
+    }
+    const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isDev) {
+      return "http://localhost:4001";
+    } else {
+      return `https://api.${getBaseDomain()}`;
+    }
+  };
+
+  const getOpsUrl = () => {
+    if (typeof window === "undefined") return "";
+    const isDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isDev) {
+      return "http://localhost:3001/login";
+    } else {
+      return `https://console.${getBaseDomain()}/login`;
+    }
+  };
+
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
@@ -19,7 +63,8 @@ export default function LandingLogin() {
     setErrorMsg("");
 
     try {
-      const res = await fetch(`http://localhost:4001/api/organizations/lookup?email=${encodeURIComponent(email)}`);
+      const apiUrl = getApiUrl();
+      const res = await fetch(`${apiUrl}/api/organizations/lookup?email=${encodeURIComponent(email)}`);
       if (!res.ok) throw new Error("Lookup failed");
       const data = await res.json();
       setOrgsList(data);
@@ -29,8 +74,7 @@ export default function LandingLogin() {
       if (data.length === 1 && data[0].roles.length === 1) {
         const match = data[0];
         const role = match.roles[0];
-        const port = role === "staff" ? "3000" : "3002";
-        window.location.href = `http://localhost:${port}/login?tenant=${match.slug}&email=${encodeURIComponent(email)}`;
+        window.location.href = getRedirectUrl(match.slug, role, email);
       }
     } catch (err: any) {
       setErrorMsg("Failed to check email. Please try again.");
@@ -40,8 +84,7 @@ export default function LandingLogin() {
   };
 
   const handleOrgClick = (slug: string, role: string) => {
-    const port = role === "staff" ? "3000" : "3002";
-    window.location.href = `http://localhost:${port}/login?tenant=${slug}&email=${encodeURIComponent(email)}`;
+    window.location.href = getRedirectUrl(slug, role, email);
   };
 
   const handleReset = () => {
@@ -138,7 +181,7 @@ export default function LandingLogin() {
                 </Button>
 
                 <div style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", borderTop: "1px solid var(--border-subtle)", paddingTop: "16px" }}>
-                  <a href="http://localhost:3001/login" style={{ color: "var(--muted)", textDecoration: "none", fontWeight: 600 }}>
+                  <a href={getOpsUrl()} style={{ color: "var(--muted)", textDecoration: "none", fontWeight: 600 }}>
                     Are you a Platform Ops Admin? Sign in here
                   </a>
                 </div>

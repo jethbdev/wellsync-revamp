@@ -55,7 +55,7 @@ export class ProvisionService {
     }
 
     // Steps 1-4: create DB + push schema + seed + create CpOrganization record
-    await this.orgsService.create({
+    const org = await this.orgsService.create({
       name: orgName,
       slug,
       type: orgType,
@@ -63,7 +63,7 @@ export class ProvisionService {
     });
 
     // Step 5: create the first admin user in the new tenant DB
-    const dbConnectionUri = `postgresql://postgres@localhost:5432/healthbridge_tenant_${slug}`;
+    const dbConnectionUri = org.dbConnectionUri!;
     const tenantPrisma = new TenantPrismaClient({
       datasources: { db: { url: dbConnectionUri } },
     });
@@ -112,11 +112,16 @@ export class ProvisionService {
         },
       });
 
+      const baseDomain = process.env.BASE_DOMAIN;
+      const loginUrl = baseDomain
+        ? `https://${slug}.${baseDomain}/login?registered=true`
+        : `http://${slug}.localhost:3000/login?registered=true`;
+
       return {
         success: true,
         slug,
         orgName,
-        loginUrl: `http://${slug}.localhost:3000/login?registered=true`,
+        loginUrl,
         message: `Organization "${orgName}" provisioned successfully`,
       };
     } finally {
