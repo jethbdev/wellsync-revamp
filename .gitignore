@@ -11,8 +11,10 @@ out/
 
 # nestjs / typescript build
 dist/
-lib/
 build/
+# Only ignore compiled lib output (not src/lib source directories)
+/lib/
+packages/database/src/generated/
 
 # IDE / Editor
 .idea
