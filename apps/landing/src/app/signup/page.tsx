@@ -113,7 +113,7 @@ export default function LandingSignup() {
             <span>Wellsync</span>
           </Link>
           <p style={{ fontSize: "14px", color: "var(--muted)", marginTop: "8px" }}>
-            Register your healthcare facility — free to start
+            Register your organization — free to start
           </p>
         </div>
 
@@ -140,7 +140,7 @@ export default function LandingSignup() {
                   {orgName} is live!
                 </h3>
                 <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "12px" }}>
-                  Your clinic EMR has been provisioned. Redirecting to your login...
+                  Your organization has been provisioned. Redirecting to your login...
                 </p>
                 <div style={{
                   display: "inline-block",
@@ -172,7 +172,7 @@ export default function LandingSignup() {
                 )}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
-                  <Field label="Clinic / Facility Name">
+                  <Field label="Organization Name">
                     <Input
                       type="text"
                       value={orgName}
@@ -187,7 +187,7 @@ export default function LandingSignup() {
                     )}
                   </Field>
 
-                  <Field label="EMR Profile">
+                  <Field label="Organization Type">
                     <Select
                       value={orgType}
                       onChange={(e) => setOrgType(e.target.value as any)}
@@ -228,7 +228,7 @@ export default function LandingSignup() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. admin@facility.ph"
+                      placeholder="e.g. admin@org.ph"
                       required
                     />
                   </Field>
@@ -245,7 +245,7 @@ export default function LandingSignup() {
                 </div>
 
                 <Button type="submit" variant="primary" style={{ width: "100%", padding: "12px" }} disabled={isLoading}>
-                  {isLoading ? "Provisioning your clinic EMR..." : "Create My Clinic EMR"}
+                  {isLoading ? "Provisioning your organization..." : "Create My Organization"}
                 </Button>
 
                 <p style={{ fontSize: "11px", color: "var(--muted)", textAlign: "center", marginTop: "12px" }}>

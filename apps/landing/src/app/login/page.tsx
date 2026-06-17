@@ -197,7 +197,7 @@ export default function LandingLogin() {
                     Try Another Email
                   </Button>
                   <Link href="/signup" className="btn btn-secondary" style={{ width: "100%", padding: "12px", textDecoration: "none", textAlign: "center", display: "block", boxSizing: "border-box" }}>
-                    Register Clinic Free
+                    Register Organization Free
                   </Link>
                 </div>
               </div>
@@ -254,9 +254,9 @@ export default function LandingLogin() {
             )}
 
             <div style={{ textAlign: "center", marginTop: "24px", fontSize: "12px" }}>
-              <span style={{ color: "var(--muted)" }}>New clinic? </span>
+              <span style={{ color: "var(--muted)" }}>New organization? </span>
               <Link href="/signup" style={{ color: "var(--accent)", fontWeight: 600, textDecoration: "none" }}>
-                Register clinic free
+                Register organization free
               </Link>
             </div>
 
