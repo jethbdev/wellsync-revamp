@@ -134,6 +134,59 @@ export class OrganizationsService {
         console.log(`[Provisioning] Waiting for Postgres database at ${dbHost}:5432 to accept connections...`);
         await this.waitForDbConnection(dbConnectionUri);
 
+        // 1.3. Provision Domains in Dokploy if Application IDs are provided
+        const baseDomain = process.env.BASE_DOMAIN || 'wellsync.jethb.space';
+        const staffAppId = process.env.STAFF_WEB_APPLICATION_ID;
+        const patientAppId = process.env.PATIENT_WEB_APPLICATION_ID;
+
+        if (staffAppId) {
+          console.log(`[Provisioning] Creating Dokploy domain for Staff: ${cleanSlug}.${baseDomain}`);
+          const staffDomainRes = await fetch(`${dokployApiUrl}/domain.create`, {
+            method: 'POST',
+            headers: {
+              'x-api-key': dokployApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              host: `${cleanSlug}.${baseDomain}`,
+              applicationId: staffAppId,
+              path: '/',
+              containerPort: 3000,
+              https: true,
+            }),
+          });
+          if (!staffDomainRes.ok) {
+            const errText = await staffDomainRes.text();
+            console.error(`[Provisioning] Failed to create Staff domain: ${errText}`);
+          } else {
+            console.log(`[Provisioning] Staff domain created successfully`);
+          }
+        }
+
+        if (patientAppId) {
+          console.log(`[Provisioning] Creating Dokploy domain for Patient: patient.${cleanSlug}.${baseDomain}`);
+          const patientDomainRes = await fetch(`${dokployApiUrl}/domain.create`, {
+            method: 'POST',
+            headers: {
+              'x-api-key': dokployApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              host: `patient.${cleanSlug}.${baseDomain}`,
+              applicationId: patientAppId,
+              path: '/',
+              containerPort: 3000,
+              https: true,
+            }),
+          });
+          if (!patientDomainRes.ok) {
+            const errText = await patientDomainRes.text();
+            console.error(`[Provisioning] Failed to create Patient domain: ${errText}`);
+          } else {
+            console.log(`[Provisioning] Patient domain created successfully`);
+          }
+        }
+
       } catch (e: any) {
         console.error('Failed to create/deploy database via Dokploy', e);
         throw new BadRequestException(`Dokploy database provisioning failed: ${e.message}`);
