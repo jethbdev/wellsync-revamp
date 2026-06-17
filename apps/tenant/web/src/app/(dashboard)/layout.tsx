@@ -1137,7 +1137,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <div className="sb-facility-org">
                     {session?.session?.tenantSlug
                       ? `${session.session.tenantSlug.replace(/-/g, " ")} group`
-                      : "HealthBridge Group"}
+                      : "Wellsync Group"}
                   </div>
                   <div className="sb-facility-name">
                     {activeFacility

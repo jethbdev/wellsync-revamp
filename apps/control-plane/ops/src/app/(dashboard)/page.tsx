@@ -36,7 +36,7 @@ export default function OpsDashboard() {
       <div className="panel-inner">
         <div className="ph">
           <div className="ph-left">
-            <h2>Control Plane Overview</h2>
+            <h2>Wellsync Console Overview</h2>
             <p>Global monitor dashboard for provisioned health tenants and database health.</p>
           </div>
           <div className="ph-actions">

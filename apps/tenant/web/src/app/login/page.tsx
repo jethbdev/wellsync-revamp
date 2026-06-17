@@ -196,7 +196,7 @@ function LoginContent() {
                   </svg>
                 </div>
                 <h3 style={{ fontFamily: "Sora, sans-serif", fontSize: "16px", fontWeight: 700, marginBottom: "12px", color: "var(--warn-text)" }}>
-                  Tenant Context Required
+                  Clinic Context Required
                 </h3>
                 <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.6, marginBottom: "20px" }}>
                   Please access this EMR portal via your organization's custom subdomain:
@@ -248,7 +248,7 @@ function LoginContent() {
                     </svg>
                   </div>
                   <h3 style={{ fontFamily: "Sora, sans-serif", fontSize: "18px", fontWeight: 700, marginBottom: "8px" }}>Password Configured!</h3>
-                  <p style={{ fontSize: "13px", color: "var(--muted)" }}>Logging you into HealthBridge EMR...</p>
+                  <p style={{ fontSize: "13px", color: "var(--muted)" }}>Logging you into Wellsync Staff...</p>
                 </div>
               ) : (
                 <form onSubmit={handleChangePassword}>
@@ -256,7 +256,7 @@ function LoginContent() {
                     Configure Your Password
                   </h3>
                   <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "20px", lineHeight: "1.5" }}>
-                    Welcome to HealthBridge! Since this is your first time logging in, you must update your password to secure your account.
+                    Welcome to Wellsync! Since this is your first time logging in, you must update your password to secure your account.
                   </p>
 
                   {errorMsg && (
@@ -346,7 +346,7 @@ function LoginContent() {
 
             <div style={{ textAlign: "center", marginTop: "24px", fontSize: "12px" }}>
               <a href="http://localhost:3003" style={{ color: "var(--muted)", textDecoration: "none" }}>
-                ← Return to HealthBridge Landing
+                ← Return to Wellsync
               </a>
             </div>
           </CardBody>
@@ -358,7 +358,7 @@ function LoginContent() {
   );
 }
 
-export default function TenantWebLogin() {
+export default function StaffLogin() {
   return (
     <React.Suspense fallback={<div style={{ padding: 40 }}>Loading authentication...</div>}>
       <LoginContent />

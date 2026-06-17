@@ -619,7 +619,7 @@ function PatientDashboardLayoutContent({ children }: { children: React.ReactNode
                   </svg>
                 </div>
                 <div className="sb-facility-text">
-                  <div className="sb-facility-org">{profile.facility?.organization?.name || "HealthBridge Group"}</div>
+                  <div className="sb-facility-org">{profile.facility?.organization?.name || "Wellsync Group"}</div>
                   <div className="sb-facility-name">
                     {profile.facility?.name || "Primary Clinic"}
                   </div>

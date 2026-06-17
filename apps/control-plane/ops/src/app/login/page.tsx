@@ -60,7 +60,7 @@ export default function OpsLogin() {
             <span>Wellsync Console</span>
           </div>
           <p style={{ fontSize: "14px", color: "var(--muted)", marginTop: "8px" }}>
-            Control Plane System Management
+            Wellsync Console
           </p>
         </div>
 

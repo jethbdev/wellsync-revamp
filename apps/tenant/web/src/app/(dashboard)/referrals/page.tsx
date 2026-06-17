@@ -506,7 +506,7 @@ export default function ReferralsDashboardPage() {
                             <body>
                               <div class="header">
                                 <h1>CLINICAL REFERRAL SLIP</h1>
-                                <p style="font-size: 13px; color: #64748b; margin: 4px 0 0 0;">HealthBridge Unified Referral Network</p>
+                                <p style="font-size: 13px; color: #64748b; margin: 4px 0 0 0;">Wellsync Unified Referral Network</p>
                               </div>
                               <div class="grid section">
                                 <div class="field">

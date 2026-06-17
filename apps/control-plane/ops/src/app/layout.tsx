@@ -3,7 +3,7 @@ import "@healthbridge/ui/dist/styles.css";
 
 export const metadata = {
   title: "Wellsync Console",
-  description: "Platform management for HealthBridge",
+  description: "Platform management for Wellsync",
   icons: {
     icon: "/favicon.png",
   },

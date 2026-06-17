@@ -340,7 +340,7 @@ export default function PatientDashboard() {
               {getGreeting()}, {profile.firstName} 👋
             </h1>
             <p>
-              Welcome to the {profile.facility ? `${profile.facility.name} Patient Portal` : "HealthBridge Patient Portal"}. Track your clinical notes, vitals, prescriptions, and files in a secure health hub.
+              Welcome to the {profile.facility ? `${profile.facility.name} Patient Portal` : "Wellsync Patient Portal"}. Track your clinical notes, vitals, prescriptions, and files in a secure health hub.
             </p>
 
             {nextAppointment && (

@@ -273,7 +273,7 @@ export default function PatientProfilePage() {
                     <div className="form-section-title">Clinical Demographics (Read-only)</div>
                     <div className="form-grid">
                       <div className="field">
-                        <label>HealthBridge PIN</label>
+                        <label>Wellsync PIN</label>
                         <input
                           type="text"
                           disabled
@@ -309,7 +309,7 @@ export default function PatientProfilePage() {
                         <input
                           type="text"
                           disabled
-                          value={profile.facility ? `${profile.facility.name} (${profile.facility.organization?.name || "HealthBridge Network"})` : ""}
+                          value={profile.facility ? `${profile.facility.name} (${profile.facility.organization?.name || "Wellsync Network"})` : ""}
                         />
                       </div>
                     </div>

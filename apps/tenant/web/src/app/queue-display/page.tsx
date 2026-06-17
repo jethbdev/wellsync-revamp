@@ -421,7 +421,7 @@ function QueueDisplayContent() {
             </svg>
           </div>
           <div>
-            <h1 className="kiosk-title">HealthBridge Clinic</h1>
+            <h1 className="kiosk-title">Wellsync Clinic</h1>
             <div className="kiosk-subtitle">Live Waiting Room Queue</div>
           </div>
         </div>

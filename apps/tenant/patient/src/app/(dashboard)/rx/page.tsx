@@ -410,7 +410,7 @@ export default function PatientRx() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
             <div>
               <h1 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: "black", fontFamily: "Sora, sans-serif" }}>
-                {(profile as any)?.facility?.name || "HealthBridge Partner Clinic"}
+                {(profile as any)?.facility?.name || "Wellsync Partner Clinic"}
               </h1>
               <p style={{ fontSize: "11px", margin: "4px 0", color: "#444" }}>
                 {(profile as any)?.facility?.address || "Electronic Medical Record Network"}
@@ -474,7 +474,7 @@ export default function PatientRx() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 40, alignItems: "flex-end", marginTop: 40, paddingTop: 20 }}>
             <div style={{ fontSize: "11px", color: "#444", display: "flex", flexDirection: "column", gap: 4 }}>
               <div><strong>Prescription Token:</strong> {selected.prescriptionToken}</div>
-              <div>Generated electronically via HealthBridge Patient Portal. Valid verification signature is embedded.</div>
+              <div>Generated electronically via Wellsync Patient Portal. Valid verification signature is embedded.</div>
               <div style={{ marginTop: 30, width: 220, borderTop: "1.5px solid #000", paddingTop: 6, fontSize: "12px", color: "#000", fontWeight: 600 }}>
                 Attending Physician
               </div>

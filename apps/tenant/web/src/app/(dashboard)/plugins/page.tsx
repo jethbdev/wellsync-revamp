@@ -26,7 +26,7 @@ const pluginMetadata: Record<
   },
   "teleconsultation": {
     category: "Clinical Extensions",
-    author: "HealthBridge Labs",
+    author: "Wellsync Labs",
     color: "green",
     icon: (
       <svg viewBox="0 0 15 15">
@@ -37,7 +37,7 @@ const pluginMetadata: Record<
   },
   "queue-management": {
     category: "Clinical Extensions",
-    author: "HealthBridge Labs",
+    author: "Wellsync Labs",
     color: "blue",
     icon: (
       <svg viewBox="0 0 15 15">
@@ -48,7 +48,7 @@ const pluginMetadata: Record<
   },
   "clinical-inventory": {
     category: "Clinical Extensions",
-    author: "HealthBridge Labs",
+    author: "Wellsync Labs",
     color: "blue",
     icon: (
       <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -87,7 +87,7 @@ const pluginDetailsMap: Record<
   },
   "teleconsultation": {
     longDescription:
-      "Enables secure video consultations, virtual waiting rooms, and remote video diagnostics for patients directly inside the HealthBridge portal.",
+      "Enables secure video consultations, virtual waiting rooms, and remote video diagnostics for patients directly inside the Wellsync Staff portal.",
     features: [
       "Auto-generated virtual meeting rooms upon appointment creation.",
       "Passcode protection for clinician and patient privacy.",
@@ -200,7 +200,7 @@ export default function PluginsPage() {
     return plugins.map((p) => {
       const meta = pluginMetadata[p.id] || {
         category: "Clinical Extensions",
-        author: "HealthBridge Labs",
+        author: "Wellsync Labs",
         color: "blue",
         icon: (
           <svg viewBox="0 0 15 15">
@@ -246,7 +246,7 @@ export default function PluginsPage() {
         <div className="ph">
           <div className="ph-left">
             <h2>Plugins</h2>
-            <p>Extend HealthBridge EMR with optional clinical features and integrations</p>
+            <p>Extend Wellsync Staff with optional clinical features and integrations</p>
           </div>
         </div>
 

@@ -118,7 +118,7 @@ export default function PatientLogin() {
                   </svg>
                 </div>
                 <h3 style={{ fontFamily: "Sora, sans-serif", fontSize: "16px", fontWeight: 700, marginBottom: "12px", color: "var(--warn-text)" }}>
-                  Tenant Context Required
+                  Clinic Context Required
                 </h3>
                 <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.6, marginBottom: "20px" }}>
                   Please access this Patient portal via your organization's custom subdomain:

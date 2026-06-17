@@ -343,7 +343,7 @@ export default function ReportsPage() {
                 </p>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: "16px", fontWeight: "700", margin: 0 }}>HealthBridge EMR</p>
+                <p style={{ fontSize: "16px", fontWeight: "700", margin: 0 }}>Wellsync Staff</p>
                 <p style={{ fontSize: "12px", color: "#666", margin: "4px 0 0 0" }}>Generated: {new Date().toLocaleString()}</p>
               </div>
             </div>

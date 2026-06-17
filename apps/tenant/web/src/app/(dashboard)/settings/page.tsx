@@ -59,7 +59,7 @@ export default function OrganizationSettingsPage() {
   
   // Branding tab states (mocked/reference UI)
   const [accentColor, setAccentColor] = React.useState("#6c63ff");
-  const [displayName, setDisplayName] = React.useState("HealthBridge Unit");
+  const [displayName, setDisplayName] = React.useState("Wellsync Unit");
   const [tagline, setTagline] = React.useState("Caring for you, one record at a time");
 
   // Security tab states (mocked/reference UI)
@@ -460,7 +460,7 @@ export default function OrganizationSettingsPage() {
                   <div className="perm-row">
                     <div className="perm-label">
                       <div className="perm-name">Enable Cross-Organization Referrals</div>
-                      <div className="perm-desc">Allows other facilities on the HealthBridge network to refer patients and request data.</div>
+                      <div className="perm-desc">Allows other facilities on the Wellsync network to refer patients and request data.</div>
                     </div>
                     <label className="toggle">
                       <input
