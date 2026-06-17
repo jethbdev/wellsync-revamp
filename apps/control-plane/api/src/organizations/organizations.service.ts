@@ -126,7 +126,7 @@ export class OrganizationsService {
           throw new Error(`Dokploy API postgres.deploy failed: ${errMsg}`);
         }
 
-        const dbHost = appName ? `dokploy-${appName}` : serviceName;
+        const dbHost = appName || serviceName;
         dbConnectionUri = `postgresql://${dbUser}:${dbPassword}@${dbHost}:5432/${dbName}`;
 
         console.log(`[Provisioning] Dokploy connection string resolved: postgresql://${dbUser}:****@${dbHost}:5432/${dbName}`);
