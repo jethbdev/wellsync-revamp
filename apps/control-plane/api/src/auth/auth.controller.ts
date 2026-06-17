@@ -1,4 +1,4 @@
-import { Controller, All, Req, Res, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, All, Req, Res, Post, Body, BadRequestException, Headers, UnauthorizedException } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { toNodeHandler } from 'better-auth/node';
 import { getOpsAuth } from './ops-auth.js';
@@ -17,7 +17,15 @@ export class AuthController {
   private auth = getOpsAuth(this.prisma);
 
   @Post('register-ops')
-  async registerOps(@Body() body: any) {
+  async registerOps(
+    @Body() body: any,
+    @Headers('x-api-key') apiKey: string
+  ) {
+    const expectedKey = process.env.OPS_REGISTRATION_KEY || 'wellsync-ops-registration-secret-key-2026';
+    if (!apiKey || apiKey !== expectedKey) {
+      throw new UnauthorizedException('Invalid or missing API key');
+    }
+
     const { email, name, password } = body;
     if (!email || !name || !password) {
       throw new BadRequestException('Email, name, and password are required');
