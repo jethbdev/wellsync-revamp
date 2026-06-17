@@ -21,17 +21,16 @@ export function getTenantSlug(): string {
   if (slug) return slug;
 
   // 3. Fallback to subdomain resolution for production
+  // Production pattern: patient.<slug>.wellsync.jethb.space
   const hostname = window.location.hostname;
   const isIP = /^[0-9.]+$/.test(hostname);
   const isExactLocalhost = hostname === 'localhost';
-  
+
   if (!isIP && !isExactLocalhost) {
     const parts = hostname.split('.');
-    if (parts.length > 1) {
-      const subdomain = parts[0];
-      if (subdomain !== 'www' && subdomain !== 'ops' && subdomain !== 'api') {
-        return subdomain;
-      }
+    // patient.<slug>.<baseDomain> → parts[0]='patient', parts[1]=slug
+    if (parts[0] === 'patient' && parts.length > 2) {
+      return parts[1];
     }
   }
   return '';
@@ -43,10 +42,10 @@ export function getApiBaseUrl(): string {
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:4000';
   }
-  // production: strip slug prefix to get base domain, then prepend api.
-  // e.g. "clinic-patient.wellsync.jethb.space" → "api.wellsync.jethb.space"
+  // Production pattern: patient.<slug>.wellsync.jethb.space
+  // Strip 'patient' + slug prefix → wellsync.jethb.space → api.wellsync.jethb.space
   const parts = hostname.split('.');
-  const baseDomain = parts.slice(1).join('.');
+  const baseDomain = parts.slice(2).join('.');
   return `${protocol}//api.${baseDomain}`;
 }
 

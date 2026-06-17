@@ -27,7 +27,7 @@ export default function LandingLogin() {
       if (role === "staff") {
         return `https://${slug}.${baseDomain}/login?tenant=${slug}&email=${encodeURIComponent(userEmail)}`;
       } else {
-        return `https://${slug}-patient.${baseDomain}/login?tenant=${slug}&email=${encodeURIComponent(userEmail)}`;
+        return `https://patient.${slug}.${baseDomain}/login?tenant=${slug}&email=${encodeURIComponent(userEmail)}`;
       }
     }
   };
