@@ -151,8 +151,10 @@ export class OrganizationsService {
               host: `${cleanSlug}.${baseDomain}`,
               applicationId: staffAppId,
               path: '/',
-              containerPort: 3000,
+              port: 3000,
               https: true,
+              certificateType: 'letsencrypt',
+              domainType: 'application',
             }),
           });
           if (!staffDomainRes.ok) {
@@ -175,8 +177,10 @@ export class OrganizationsService {
               host: `patient.${cleanSlug}.${baseDomain}`,
               applicationId: patientAppId,
               path: '/',
-              containerPort: 3000,
+              port: 3000,
               https: true,
+              certificateType: 'letsencrypt',
+              domainType: 'application',
             }),
           });
           if (!patientDomainRes.ok) {
