@@ -3,8 +3,11 @@ import "@healthbridge/ui/dist/styles.css";
 import "./landing.css";
 
 export const metadata = {
-  title: "HealthBridge - Unified Health & Logistics Management",
+  title: "Wellsync - Unified Health & Logistics Management",
   description: "Bridges EMR and inventory supply chain for Philippine healthcare",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
@@ -15,6 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.png" type="image/png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -2,8 +2,11 @@ import * as React from "react";
 import "@healthbridge/ui/dist/styles.css";
 
 export const metadata = {
-  title: "HealthBridge Control Plane",
+  title: "Wellsync Console",
   description: "Platform management for HealthBridge",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
@@ -14,6 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-lock" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.png" type="image/png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

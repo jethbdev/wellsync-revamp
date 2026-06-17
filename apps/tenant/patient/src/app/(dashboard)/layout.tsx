@@ -459,12 +459,10 @@ function PatientDashboardLayoutContent({ children }: { children: React.ReactNode
         {/* TOPBAR */}
         <div className="topbar">
           <div className="tb-logo" onClick={() => navigateTo("/")} style={{ cursor: "pointer" }}>
-            <div className="tb-logo-icon">
-              <svg viewBox="0 0 20 20">
-                <path d="M10 2a1 1 0 0 1 1 1v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V3a1 1 0 0 1 1-1zm0 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" />
-              </svg>
+            <div className="tb-logo-icon" style={{ background: "none" }}>
+              <img src="/favicon.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             </div>
-            <span>HealthBridge Patient</span>
+            <span>Wellsync Patient</span>
           </div>
 
           <div className="tb-search">

@@ -8,8 +8,9 @@ async function bootstrap() {
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-slug'],
   });
-  // Listen on port 4000
-  await app.listen(4000);
+  // Listen on PORT env var or fallback
+  const port = process.env.PORT || 4000;
+  await app.listen(port);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

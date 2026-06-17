@@ -8,8 +8,9 @@ async function bootstrap() {
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-slug'],
   });
-  // Listen on port 4001 (Ops API)
-  await app.listen(4001);
+  // Listen on PORT env var or fallback
+  const port = process.env.PORT || 4001;
+  await app.listen(port);
   console.log(`Control Plane API is running on: ${await app.getUrl()}`);
 }
 bootstrap();

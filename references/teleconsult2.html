@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MediStock EMR — Teleconsultation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#6C63FF;
+  --accent-light:#EEEDFE;
+  --accent-mid:#8B85FF;
+  --ink:#1A1A2E;
+  --muted:#6B6B8A;
+  --faint:#9999B3;
+  --surface:#F5F7FB;
+  --white:#FFFFFF;
+  --card-shadow:0 2px 16px rgba(108,99,255,0.07),0 1px 3px rgba(0,0,0,0.04);
+  --card-shadow-hover:0 6px 28px rgba(108,99,255,0.13),0 2px 8px rgba(0,0,0,0.06);
+  --rsm:8px;--rmd:12px;--rlg:18px;--rxl:28px;
+  --warn-bg:#fff8e6;--warn-text:#9a6200;
+  --crit-bg:#fef0f0;--crit-text:#a03030;
+  --info-bg:#eff6ff;--info-text:#1d4ed8;
+  --border-subtle:rgba(108,99,255,0.08);
+  --tr-hover:#FAFAFF;
+  --input-bg:var(--surface);
+  --input-focus-bg:#FFFFFF;
+  --modal-overlay-bg:rgba(26,26,46,.4);
+  --toast-bg:var(--ink);
+  --sidebar-shadow:2px 0 16px rgba(108,99,255,0.05);
+  /* teleconsult specific */
+  --video-bg:#0d0d1a;
+  --video-ctrl:#1e1e36;
+  --video-ctrl-hover:#2a2a48;
+}
+
+html.dark{
+  --accent:#8880FF;
+  --accent-light:rgba(136,128,255,0.13);
+  --accent-mid:#A09AFF;
+  --ink:#CDD9E5;
+  --muted:#768390;
+  --faint:#444C56;
+  --surface:#0D1117;
+  --white:#161B22;
+  --card-shadow:0 1px 2px rgba(0,0,0,0.5),0 4px 20px rgba(0,0,0,0.45);
+  --card-shadow-hover:0 4px 8px rgba(0,0,0,0.6),0 12px 36px rgba(0,0,0,0.5);
+  --warn-bg:rgba(251,191,36,0.1);--warn-text:#E3B341;
+  --crit-bg:rgba(248,113,113,0.1);--crit-text:#FF7B72;
+  --info-bg:rgba(96,165,250,0.1);--info-text:#79C0FF;
+  --border-subtle:rgba(255,255,255,0.06);
+  --tr-hover:rgba(255,255,255,0.03);
+  --input-bg:#21262D;
+  --input-focus-bg:#2D333B;
+  --modal-overlay-bg:rgba(0,0,0,0.7);
+  --toast-bg:#21262D;
+  --sidebar-shadow:2px 0 16px rgba(0,0,0,0.3);
+  --video-bg:#090910;
+  --video-ctrl:#131320;
+  --video-ctrl-hover:#1e1e32;
+}
+
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);line-height:1.5;display:flex;flex-direction:column}
+h1,h2,h3,h4,h5{font-family:'Sora',sans-serif}
+
+/* ─── TOPBAR ─── */
+.topbar{
+  height:56px;flex-shrink:0;background:var(--white);
+  display:flex;align-items:center;gap:0;padding:0 20px;z-index:50;
+  box-shadow:0 1px 0 var(--border-subtle);
+}
+.tb-logo{display:flex;align-items:center;gap:9px;font-family:'Sora',sans-serif;font-weight:700;font-size:16px;color:var(--ink);text-decoration:none;margin-right:20px;flex-shrink:0}
+.tb-logo-icon{width:30px;height:30px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+.tb-logo-icon svg{width:16px;height:16px;fill:white}
+.tb-back{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:var(--rsm);transition:background .15s,color .15s;margin-right:12px}
+.tb-back:hover{background:var(--accent-light);color:var(--accent)}
+.tb-back svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tb-session{display:flex;align-items:center;gap:10px}
+.tb-session-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 0 2px rgba(34,197,94,.25);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 2px rgba(34,197,94,.25)}50%{box-shadow:0 0 0 5px rgba(34,197,94,.08)}}
+.tb-session-label{font-size:12.5px;font-weight:600;color:var(--ink)}
+.tb-session-time{font-size:11px;color:var(--faint);font-family:'Sora',sans-serif;font-weight:600;min-width:40px}
+.tb-divider{width:1px;height:24px;background:var(--border-subtle);margin:0 8px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb-icon-btn{width:34px;height:34px;border-radius:var(--rmd);border:none;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;position:relative}
+.tb-icon-btn:hover{background:var(--accent-light)}
+.tb-icon-btn svg{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:white;cursor:pointer;flex-shrink:0}
+.tb-user{display:flex;flex-direction:column;line-height:1.25;gap:2px}
+.tb-user-name{font-size:12.5px;font-weight:600;color:var(--ink)}
+
+/* ─── LAYOUT ─── */
+.tc-layout{
+  flex:1;display:grid;
+  grid-template-columns:1fr 360px;
+  grid-template-rows:1fr;
+  overflow:hidden;
+  gap:0;
+}
+
+/* ─── LEFT: VIDEO + CONTROLS ─── */
+.tc-left{display:flex;flex-direction:column;overflow:hidden;background:var(--video-bg)}
+
+/* video stage */
+.video-stage{flex:1;position:relative;overflow:hidden;background:var(--video-bg)}
+
+/* patient video (main) */
+.video-main{
+  width:100%;height:100%;
+  background:linear-gradient(135deg,#0f0f2a 0%,#1a1035 50%,#0d0d1f 100%);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.video-patient-avatar{
+  width:100px;height:100px;border-radius:50%;
+  background:linear-gradient(135deg,#3730a3,#6c63ff);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Sora',sans-serif;font-size:32px;font-weight:700;color:white;
+  box-shadow:0 0 0 4px rgba(108,99,255,.3),0 0 60px rgba(108,99,255,.2);
+}
+.video-main-label{
+  position:absolute;bottom:16px;left:16px;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(8px);
+  border-radius:var(--rsm);padding:5px 12px;
+  font-size:12.5px;font-weight:600;color:white;
+  display:flex;align-items:center;gap:6px;
+}
+.video-main-label svg{width:12px;height:12px;stroke:white;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.video-conn-quality{
+  position:absolute;top:14px;left:14px;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(8px);
+  border-radius:20px;padding:4px 10px;
+  display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.7);
+}
+.video-conn-quality .bar{width:3px;border-radius:2px;background:rgba(255,255,255,.2)}
+.video-conn-quality .bar.active{background:#22c55e}
+.video-conn-quality .b1{height:6px}.b1.active{height:6px}
+.video-conn-quality .b2{height:9px}.b2.active{height:9px}
+.video-conn-quality .b3{height:12px}.b3.active{height:12px}
+.video-conn-quality .b4{height:15px}.b4.active{height:15px}
+
+/* self preview pip */
+.video-pip{
+  position:absolute;bottom:16px;right:16px;
+  width:160px;border-radius:var(--rmd);overflow:hidden;
+  background:linear-gradient(135deg,#1a1035,#111130);
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+  cursor:pointer;transition:transform .2s;
+}
+.video-pip:hover{transform:scale(1.03)}
+.video-pip-inner{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative}
+.video-pip-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:13px;font-weight:700;color:white}
+.video-pip-label{
+  position:absolute;bottom:5px;left:8px;
+  font-size:10px;font-weight:600;color:rgba(255,255,255,.8);
+}
+
+/* recording indicator */
+.rec-indicator{
+  position:absolute;top:14px;right:14px;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(8px);
+  border-radius:20px;padding:4px 10px;
+  display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.8);
+  cursor:pointer;
+}
+.rec-dot{width:7px;height:7px;border-radius:50%;background:#e03030;animation:rec-blink 1.4s infinite}
+@keyframes rec-blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* controls bar */
+.video-controls{
+  height:72px;flex-shrink:0;background:var(--video-ctrl);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:0 24px;position:relative;
+}
+.vc-btn{
+  width:46px;height:46px;border-radius:50%;border:none;
+  background:var(--video-ctrl-hover);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,transform .15s;position:relative;
+}
+.vc-btn:hover{background:rgba(108,99,255,.3);transform:scale(1.07)}
+.vc-btn svg{width:18px;height:18px;stroke:rgba(255,255,255,.85);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.vc-btn.active svg{stroke:var(--accent-mid)}
+.vc-btn.danger{background:rgba(224,48,48,.15)}
+.vc-btn.danger svg{stroke:#f87171}
+.vc-btn.end-call{
+  width:52px;height:52px;background:#e03030;margin:0 8px;
+}
+.vc-btn.end-call:hover{background:#c02020;transform:scale(1.08)}
+.vc-btn.end-call svg{stroke:white;width:20px;height:20px}
+.vc-btn-label{font-size:9.5px;font-weight:500;color:rgba(255,255,255,.45);position:absolute;bottom:-18px;white-space:nowrap}
+.vc-group{display:flex;align-items:center;gap:10px;position:relative}
+.vc-group::after{content:'';position:absolute;right:-14px;top:50%;transform:translateY(-50%);height:24px;width:1px;background:rgba(255,255,255,.08)}
+.vc-group:last-child::after{display:none}
+
+/* participant strip */
+.participant-strip{
+  height:70px;flex-shrink:0;background:rgba(0,0,0,.25);
+  display:flex;align-items:center;gap:10px;padding:0 16px;
+  border-top:1px solid rgba(255,255,255,.05);
+  overflow-x:auto;
+}
+.participant-thumb{
+  flex-shrink:0;width:80px;border-radius:var(--rsm);overflow:hidden;
+  background:#1a1a32;cursor:pointer;position:relative;transition:transform .15s;
+}
+.participant-thumb:hover{transform:scale(1.05)}
+.participant-thumb-inner{aspect-ratio:4/3;display:flex;align-items:center;justify-content:center}
+.participant-thumb-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:10px;font-weight:700;color:white}
+.participant-thumb-name{font-size:9px;font-weight:600;color:rgba(255,255,255,.7);text-align:center;padding:3px 4px;background:rgba(0,0,0,.4)}
+.participant-thumb.speaking{box-shadow:0 0 0 2px #22c55e}
+.participant-thumb.muted::after{content:'';position:absolute;bottom:20px;right:4px;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.7);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 3l6 6M6 1.5a2 2 0 0 1 2 2v1L4 7.5V3.5a2 2 0 0 1 2-2zM2.5 5a3.5 3.5 0 0 0 7 0M6 8.5V10.5M4.5 10.5h3' stroke='%23f87171' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;background-size:10px}
+
+/* ─── RIGHT: PATIENT CONTEXT + SOAP ─── */
+.tc-right{
+  display:flex;flex-direction:column;
+  background:var(--white);
+  border-left:1px solid var(--border-subtle);
+  overflow:hidden;
+}
+
+/* right panel tabs */
+.tc-right-tabs{
+  display:flex;border-bottom:1px solid var(--border-subtle);
+  flex-shrink:0;background:var(--white);
+}
+.tc-tab{
+  flex:1;padding:12px 8px;font-size:12px;font-weight:500;color:var(--muted);
+  cursor:pointer;text-align:center;border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s;margin-bottom:-1px;
+}
+.tc-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tc-tab:hover:not(.active){color:var(--ink)}
+.tc-pane{display:none;flex:1;overflow-y:auto;padding:16px}
+.tc-pane.active{display:flex;flex-direction:column;gap:12px}
+
+/* patient context card */
+.pt-context-card{background:var(--surface);border-radius:var(--rmd);padding:14px}
+.pt-context-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.pt-context-avatar{width:40px;height:40px;border-radius:11px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.pt-context-name{font-size:14px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif}
+.pt-context-sub{font-size:11px;color:var(--faint);margin-top:2px}
+.pt-context-meta{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border-subtle);border-radius:var(--rsm);overflow:hidden}
+.pt-meta-cell{background:var(--white);padding:8px 10px}
+.pt-meta-key{font-size:10px;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.pt-meta-val{font-size:12.5px;font-weight:600;color:var(--ink)}
+
+/* vitals row */
+.vital-row-mini{display:flex;flex-direction:column;gap:5px}
+.vital-mini{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surface);border-radius:var(--rsm)}
+.vital-mini-label{font-size:11px;font-weight:500;color:var(--muted)}
+.vital-mini-val{font-size:13px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif}
+.vital-mini-val.warn{color:var(--warn-text)}
+.vital-mini-val.crit{color:var(--crit-text)}
+
+/* rx mini list */
+.rx-mini{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border-radius:var(--rsm)}
+.rx-mini-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.rx-mini-name{font-size:12px;font-weight:600;color:var(--ink);flex:1}
+.rx-mini-dose{font-size:11px;color:var(--muted)}
+
+/* ─── SOAP panel ─── */
+.soap-panel{display:flex;flex-direction:column;gap:0;flex:1}
+
+.soap-field-group{background:var(--white);border-radius:var(--rmd);box-shadow:var(--card-shadow);overflow:hidden;margin-bottom:10px}
+.soap-field-group:last-child{margin-bottom:0}
+.soap-field-header{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  border-bottom:1px solid var(--border-subtle);
+  cursor:pointer;user-select:none;transition:background .15s;
+}
+.soap-field-header:hover{background:var(--tr-hover)}
+.soap-field-badge{
+  width:22px;height:22px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;flex-shrink:0;
+}
+.soap-field-badge.s{background:#eef2ff;color:#4f46e5}
+.soap-field-badge.o{background:var(--info-bg);color:var(--info-text)}
+.soap-field-badge.a{background:var(--warn-bg);color:var(--warn-text)}
+.soap-field-badge.p{background:var(--accent-light);color:var(--accent)}
+.soap-field-title{font-size:12px;font-weight:700;color:var(--ink);flex:1}
+.soap-field-title span{font-size:11px;font-weight:400;color:var(--faint);margin-left:6px}
+.soap-field-chevron{width:13px;height:13px;stroke:var(--faint);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s;flex-shrink:0}
+.soap-field-group.collapsed .soap-field-chevron{transform:rotate(-90deg)}
+.soap-field-body{padding:10px 14px}
+.soap-field-group.collapsed .soap-field-body{display:none}
+.soap-textarea{
+  width:100%;border:none;background:var(--input-bg);
+  border-radius:var(--rsm);padding:9px 12px;
+  font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--ink);
+  outline:none;resize:vertical;min-height:72px;line-height:1.6;
+  transition:box-shadow .2s,background .2s;
+}
+.soap-textarea:focus{box-shadow:0 0 0 2px var(--accent);background:var(--input-focus-bg)}
+.soap-textarea::placeholder{color:var(--faint)}
+.soap-quick-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.soap-tag{font-size:10.5px;font-weight:500;color:var(--muted);background:var(--surface);border:none;border-radius:20px;padding:3px 10px;cursor:pointer;transition:background .15s,color .15s;font-family:'DM Sans',sans-serif}
+.soap-tag:hover{background:var(--accent-light);color:var(--accent)}
+
+/* diagnoses */
+.dx-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.dx-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border-radius:var(--rsm)}
+.dx-code{font-size:10px;font-weight:700;color:var(--accent);font-family:'Sora',sans-serif;min-width:46px}
+.dx-name{font-size:12px;font-weight:600;color:var(--ink);flex:1}
+.dx-remove{width:20px;height:20px;border-radius:5px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s,background .15s}
+.dx-item:hover .dx-remove{opacity:1}
+.dx-remove:hover{background:var(--crit-bg)}
+.dx-remove svg{width:10px;height:10px;stroke:var(--crit-text);fill:none;stroke-width:2.5;stroke-linecap:round}
+.dx-add-row{display:flex;gap:6px}
+.dx-add-input{flex:1;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:7px 10px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:box-shadow .2s}
+.dx-add-input:focus{box-shadow:0 0 0 2px var(--accent)}
+.dx-add-input::placeholder{color:var(--faint)}
+.btn-xs{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--rsm);font-size:11.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:'Sora',sans-serif}
+.btn-xs svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.btn-xs.primary{background:var(--accent);color:white}
+.btn-xs.primary:hover{background:var(--accent-mid)}
+.btn-xs.outline{background:var(--white);color:var(--muted);box-shadow:var(--card-shadow)}
+.btn-xs.outline:hover{background:var(--accent-light);color:var(--accent)}
+
+/* plan row */
+.plan-row{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-subtle)}
+.plan-row:last-of-type{border-bottom:none}
+.plan-num{font-size:10px;font-weight:700;color:var(--accent);font-family:'Sora',sans-serif;min-width:16px;margin-top:1px}
+.plan-text{font-size:12px;color:var(--ink);flex:1;line-height:1.5}
+.plan-add{display:flex;gap:6px;margin-top:8px}
+.plan-input{flex:1;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:7px 10px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:box-shadow .2s}
+.plan-input:focus{box-shadow:0 0 0 2px var(--accent)}
+.plan-input::placeholder{color:var(--faint)}
+
+/* notes / chat */
+.chat-area{display:flex;flex-direction:column;gap:10px}
+.chat-msg{display:flex;gap:8px;align-items:flex-start}
+.chat-msg.patient{flex-direction:row-reverse}
+.chat-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Sora',sans-serif;font-size:9px;font-weight:700;color:white;flex-shrink:0;margin-top:2px}
+.chat-bubble{max-width:78%;padding:8px 12px;border-radius:12px;font-size:12.5px;line-height:1.55}
+.chat-bubble.dr{background:var(--accent);color:white;border-radius:12px 12px 4px 12px}
+.chat-bubble.pt{background:var(--surface);color:var(--ink);border-radius:12px 12px 12px 4px}
+.chat-time{font-size:10px;color:var(--faint);margin-top:4px;text-align:right}
+.chat-time.pt{text-align:left}
+.chat-input-row{display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border-subtle);margin-top:4px}
+.chat-input{flex:1;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:8px 12px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;transition:box-shadow .2s}
+.chat-input:focus{box-shadow:0 0 0 2px var(--accent)}
+.chat-input::placeholder{color:var(--faint)}
+.chat-send{width:34px;height:34px;border-radius:var(--rsm);background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.chat-send:hover{background:var(--accent-mid)}
+.chat-send svg{width:14px;height:14px;stroke:white;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* finalize bar */
+.soap-finalize-bar{
+  flex-shrink:0;padding:12px 16px;
+  background:var(--white);border-top:1px solid var(--border-subtle);
+  display:flex;align-items:center;gap:8px;
+}
+.soap-status{flex:1;font-size:11.5px;color:var(--muted)}
+.soap-status strong{color:var(--ink)}
+
+/* ─── PILLS / BADGES ─── */
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pill.ok{background:var(--accent-light);color:var(--accent)}
+.pill.warn{background:var(--warn-bg);color:var(--warn-text)}
+.pill.crit{background:var(--crit-bg);color:var(--crit-text)}
+.pill.info{background:var(--info-bg);color:var(--info-text)}
+.pill.neutral{background:var(--surface);color:var(--muted)}
+.pill.xs{padding:1px 8px;font-size:9.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+
+/* ─── BTN ─── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:'Sora',sans-serif}
+.btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{background:var(--accent-mid)}
+.btn-outline{background:var(--white);color:var(--ink);box-shadow:var(--card-shadow)}
+.btn-outline:hover{background:var(--accent-light);color:var(--accent)}
+
+/* ─── SECTION HEADERS ─── */
+.section-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+
+/* ─── TOGGLE ─── */
+.toggle{position:relative;display:inline-flex;cursor:pointer;flex-shrink:0}
+.toggle input{position:absolute;opacity:0;width:0;height:0}
+.toggle-track{width:34px;height:20px;border-radius:10px;background:var(--surface);transition:background .2s;border:1.5px solid var(--border-subtle)}
+.toggle input:checked ~ .toggle-track{background:var(--accent);border-color:var(--accent)}
+.toggle-thumb{position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:white;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .2s}
+.toggle input:checked ~ .toggle-thumb{transform:translateX(14px)}
+
+/* ─── TOAST ─── */
+.toast-wrap{
+  position:fixed;bottom:20px;right:20px;
+  border-radius:var(--rmd);overflow:hidden;
+  transform:translateY(20px);opacity:0;
+  transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s;
+  pointer-events:none;z-index:200;
+  box-shadow:0 8px 32px rgba(0,0,0,.25);
+  background:#1A1A2E;
+}
+.toast-wrap.show{transform:translateY(0);opacity:1}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 18px;font-size:13.5px;font-weight:500;color:white}
+.toast svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;flex-shrink:0}
+
+/* ─── END CALL CONFIRM MODAL ─── */
+.modal-overlay{position:fixed;inset:0;background:var(--modal-overlay-bg);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--white);border-radius:var(--rxl);width:460px;max-width:92vw;box-shadow:0 24px 80px rgba(0,0,0,.35);transform:scale(.97) translateY(8px);transition:transform .3s cubic-bezier(.22,1,.36,1)}
+.modal-overlay.open .modal{transform:scale(1) translateY(0)}
+.modal-top{padding:22px 26px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:17px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif}
+.modal-close{width:32px;height:32px;border-radius:7px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.modal-close:hover{background:var(--surface)}
+.modal-close svg{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round}
+.modal-body{padding:22px 26px}
+.modal-foot{padding:0 26px 22px;display:flex;gap:8px;justify-content:flex-end}
+.btn-danger{background:var(--crit-bg);color:var(--crit-text)}
+.btn-danger:hover{background:var(--crit-text);color:white}
+</style>
+</head>
+<body>
+
+<!-- ─── TOPBAR ─── -->
+<div class="topbar">
+  <a href="emr_updated_2.html" class="tb-logo">
+    <div class="tb-logo-icon"><svg viewBox="0 0 20 20"><path d="M10 2a1 1 0 0 1 1 1v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V3a1 1 0 0 1 1-1zm0 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg></div>
+    MediStock EMR
+  </a>
+  <div class="tb-divider"></div>
+  <a href="emr_updated_2.html" class="tb-back">
+    <svg viewBox="0 0 13 13"><path d="M8 2.5L3.5 6.5 8 10.5"/></svg>
+    Back to EMR
+  </a>
+
+  <div class="tb-session">
+    <div class="tb-session-dot"></div>
+    <div class="tb-session-label">Session Active</div>
+    <div class="tb-session-time" id="session-timer">00:00</div>
+  </div>
+
+  <div class="tb-right">
+    <button class="tb-icon-btn" onclick="showToast('Inviting participant…')" title="Invite">
+      <svg viewBox="0 0 16 16"><path d="M11 7.5a3.5 3.5 0 1 0-7 0 3.5 3.5 0 0 0 7 0zM1 14.5a7 7 0 0 1 14 0"/><path d="M13 4.5h3M14.5 3v3"/></svg>
+    </button>
+    <button class="tb-icon-btn" onclick="showToast('Screen sharing started')" title="Share Screen">
+      <svg viewBox="0 0 16 16"><rect x="1" y="2.5" width="14" height="9" rx="2"/><path d="M5.5 13.5h5M8 11.5v2"/></svg>
+    </button>
+    <div class="tb-divider"></div>
+    <div class="tb-avatar">MS</div>
+    <div class="tb-user">
+      <div class="tb-user-name">Dr. M. Santos</div>
+      <span class="pill ok xs">Internal Medicine</span>
+    </div>
+    <button class="tb-icon-btn" onclick="toggleDark()" title="Toggle theme">
+      <svg viewBox="0 0 16 16"><path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ─── MAIN LAYOUT ─── -->
+<div class="tc-layout">
+
+  <!-- ─── LEFT: VIDEO ─── -->
+  <div class="tc-left">
+
+    <!-- Video Stage -->
+    <div class="video-stage">
+      <div class="video-main">
+        <!-- Connection quality -->
+        <div class="video-conn-quality">
+          <div style="display:flex;align-items:flex-end;gap:2px;height:15px">
+            <div class="bar b1 active"></div>
+            <div class="bar b2 active"></div>
+            <div class="bar b3 active"></div>
+            <div class="bar b4 active"></div>
+          </div>
+          HD · 38ms
+        </div>
+
+        <!-- Recording badge -->
+        <div class="rec-indicator" onclick="showToast('Recording paused')">
+          <div class="rec-dot"></div>
+          REC 12:34
+        </div>
+
+        <!-- Patient (main video) -->
+        <div class="video-patient-avatar">JD</div>
+        <div class="video-main-label">
+          <svg viewBox="0 0 12 12"><circle cx="6" cy="4" r="2"/><path d="M2 10c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5"/></svg>
+          Juan Dela Cruz — Patient
+        </div>
+
+        <!-- Doctor PIP -->
+        <div class="video-pip">
+          <div class="video-pip-inner">
+            <div class="video-pip-avatar">MS</div>
+          </div>
+          <div class="video-pip-label">Dr. Santos (You)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Participant strip -->
+    <div class="participant-strip">
+      <div class="participant-thumb speaking">
+        <div class="participant-thumb-inner">
+          <div class="participant-thumb-avatar" style="background:#6c63ff">JD</div>
+        </div>
+        <div class="participant-thumb-name">Juan D.</div>
+      </div>
+      <div class="participant-thumb">
+        <div class="participant-thumb-inner">
+          <div class="participant-thumb-avatar" style="background:#0ea5e9">MS</div>
+        </div>
+        <div class="participant-thumb-name">Dr. Santos</div>
+      </div>
+      <div class="participant-thumb muted" style="opacity:.5">
+        <div class="participant-thumb-inner">
+          <div class="participant-thumb-avatar" style="background:#22c55e">RN</div>
+        </div>
+        <div class="participant-thumb-name">Nurse Reyes</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="video-controls">
+      <div class="vc-group" style="gap:12px">
+        <div style="position:relative">
+          <button class="vc-btn danger" id="btn-mic" onclick="toggleCtrl('mic')" title="Toggle Mic">
+            <svg id="mic-icon" viewBox="0 0 20 20"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 10a6 6 0 0 0 12 0M10 16v3M7.5 19h5"/></svg>
+          </button>
+          <span class="vc-btn-label">Mute</span>
+        </div>
+        <div style="position:relative">
+          <button class="vc-btn" id="btn-cam" onclick="toggleCtrl('cam')" title="Toggle Camera">
+            <svg viewBox="0 0 20 20"><rect x="1" y="4.5" width="13" height="11" rx="2.5"/><path d="M14 8.5l5-3v9l-5-3"/></svg>
+          </button>
+          <span class="vc-btn-label">Camera</span>
+        </div>
+      </div>
+
+      <div class="vc-group" style="gap:12px">
+        <div style="position:relative">
+          <button class="vc-btn" onclick="showToast('Screen sharing started')" title="Share Screen">
+            <svg viewBox="0 0 20 20"><rect x="2" y="3" width="16" height="11" rx="2"/><path d="M7 17h6M10 14v3"/></svg>
+          </button>
+          <span class="vc-btn-label">Share</span>
+        </div>
+        <div style="position:relative">
+          <button class="vc-btn" onclick="showToast('Chat opened')" title="Chat">
+            <svg viewBox="0 0 20 20"><path d="M2 4.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7l-4 3V4.5z"/></svg>
+          </button>
+          <span class="vc-btn-label">Chat</span>
+        </div>
+        <div style="position:relative">
+          <button class="vc-btn" onclick="showToast('Participants list opened')" title="Participants">
+            <svg viewBox="0 0 20 20"><circle cx="6" cy="6.5" r="3"/><path d="M1 17a5 5 0 0 1 10 0"/><circle cx="15.5" cy="7" r="2.5"/><path d="M13 17a4.5 4.5 0 0 1 9 0"/></svg>
+          </button>
+          <span class="vc-btn-label">People</span>
+        </div>
+      </div>
+
+      <div style="position:relative">
+        <button class="vc-btn end-call" onclick="openEndModal()" title="End Call">
+          <svg viewBox="0 0 20 20"><path d="M3 10.5c0-4 3.1-7.5 7-7.5s7 3.5 7 7.5M1 13.5l2.5-3.5 3 1-1 2.5c3 1.5 6 1.5 9 0l-1-2.5 3-1 2.5 3.5c-4 4-14 4-18 0z"/></svg>
+        </button>
+        <span class="vc-btn-label" style="bottom:-20px;left:50%;transform:translateX(-50%)">End Call</span>
+      </div>
+
+      <div class="vc-group" style="gap:12px">
+        <div style="position:relative">
+          <button class="vc-btn" onclick="showToast('Whiteboard opened')" title="Whiteboard">
+            <svg viewBox="0 0 20 20"><rect x="2" y="2" width="16" height="13" rx="2"/><path d="M6 9.5l2.5 2.5 5-6M2 15l3 3M18 15l-3 3M10 15v3"/></svg>
+          </button>
+          <span class="vc-btn-label">Board</span>
+        </div>
+        <div style="position:relative">
+          <button class="vc-btn" onclick="showToast('More options')" title="More">
+            <svg viewBox="0 0 20 20"><circle cx="5" cy="10" r="1.5" fill="rgba(255,255,255,.85)"/><circle cx="10" cy="10" r="1.5" fill="rgba(255,255,255,.85)"/><circle cx="15" cy="10" r="1.5" fill="rgba(255,255,255,.85)"/></svg>
+          </button>
+          <span class="vc-btn-label">More</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── RIGHT: CONTEXT + SOAP ─── -->
+  <div class="tc-right">
+    <div class="tc-right-tabs">
+      <div class="tc-tab active" onclick="tcTab(this,'pane-soap')">SOAP Note</div>
+      <div class="tc-tab" onclick="tcTab(this,'pane-patient')">Patient</div>
+      <div class="tc-tab" onclick="tcTab(this,'pane-chat')">Chat</div>
+    </div>
+
+    <!-- ─ SOAP PANE ─ -->
+    <div class="tc-pane active" id="pane-soap">
+
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink);font-family:'Sora',sans-serif">New SOAP Note</div>
+          <div style="font-size:11px;color:var(--faint);margin-top:1px">Jun 14, 2026 · Juan Dela Cruz</div>
+        </div>
+        <button class="btn-xs outline" onclick="showToast('Draft saved')">
+          <svg viewBox="0 0 12 12"><path d="M1.5 9V10.5h9V9M6 1.5v6M3.5 4.5l2.5-3 2.5 3"/></svg>
+          Save Draft
+        </button>
+      </div>
+
+      <!-- S -->
+      <div class="soap-field-group" id="sg-s">
+        <div class="soap-field-header" onclick="toggleSoapGroup('sg-s')">
+          <div class="soap-field-badge s">S</div>
+          <div class="soap-field-title">Subjective <span>Chief complaint &amp; history</span></div>
+          <svg class="soap-field-chevron" viewBox="0 0 12 12"><path d="M2.5 4.5l3.5 3.5 3.5-3.5"/></svg>
+        </div>
+        <div class="soap-field-body">
+          <textarea class="soap-textarea" id="soap-s" placeholder="Enter patient's chief complaint, history of present illness, and relevant symptoms…">Patient reports persistent morning headaches, mostly when forgetting medication. Denies chest pain, dyspnea, or palpitations. Reports high work stress and admits to salty food intake. Non-compliant with DASH diet.</textarea>
+          <div class="soap-quick-tags">
+            <button class="soap-tag" onclick="appendSoap('soap-s','Denies fever, chills, or night sweats.')">+ Denies fever</button>
+            <button class="soap-tag" onclick="appendSoap('soap-s','No recent travel or sick contacts.')">+ No sick contacts</button>
+            <button class="soap-tag" onclick="appendSoap('soap-s','Symptoms onset: gradual.')">+ Gradual onset</button>
+            <button class="soap-tag" onclick="appendSoap('soap-s','Pain scale: /10.')">+ Pain scale</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- O -->
+      <div class="soap-field-group" id="sg-o">
+        <div class="soap-field-header" onclick="toggleSoapGroup('sg-o')">
+          <div class="soap-field-badge o">O</div>
+          <div class="soap-field-title">Objective <span>Vitals &amp; physical exam findings</span></div>
+          <svg class="soap-field-chevron" viewBox="0 0 12 12"><path d="M2.5 4.5l3.5 3.5 3.5-3.5"/></svg>
+        </div>
+        <div class="soap-field-body">
+          <!-- Quick vitals input -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--faint);margin-bottom:3px">BP (mmHg)</div>
+              <input type="text" style="width:100%;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none" placeholder="142/88" value="142/88"/>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--faint);margin-bottom:3px">HR (bpm)</div>
+              <input type="text" style="width:100%;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none" placeholder="78" value="78"/>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--faint);margin-bottom:3px">SpO₂ (%)</div>
+              <input type="text" style="width:100%;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none" placeholder="98" value="98"/>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--faint);margin-bottom:3px">Temp (°C)</div>
+              <input type="text" style="width:100%;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none" placeholder="36.8" value="36.8"/>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--faint);margin-bottom:3px">Wt (kg)</div>
+              <input type="text" style="width:100%;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none" placeholder="82" value="82"/>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:600;color:var(--faint);margin-bottom:3px">RR (/min)</div>
+              <input type="text" style="width:100%;border:none;background:var(--input-bg);border-radius:var(--rsm);padding:6px 8px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none" placeholder="16" value="16"/>
+            </div>
+          </div>
+          <textarea class="soap-textarea" id="soap-o" placeholder="Physical examination findings…">Lungs clear to auscultation bilaterally. Heart regular rate and rhythm. No pedal edema. JVP not elevated. Abdomen soft, non-tender.</textarea>
+          <div class="soap-quick-tags">
+            <button class="soap-tag" onclick="appendSoap('soap-o','GCS 15, alert and oriented.')">+ GCS 15</button>
+            <button class="soap-tag" onclick="appendSoap('soap-o','No focal neurological deficits.')">+ No neuro deficits</button>
+            <button class="soap-tag" onclick="appendSoap('soap-o','Capillary refill < 2 seconds.')">+ CRT &lt;2s</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- A -->
+      <div class="soap-field-group" id="sg-a">
+        <div class="soap-field-header" onclick="toggleSoapGroup('sg-a')">
+          <div class="soap-field-badge a">A</div>
+          <div class="soap-field-title">Assessment <span>Diagnoses &amp; clinical impression</span></div>
+          <svg class="soap-field-chevron" viewBox="0 0 12 12"><path d="M2.5 4.5l3.5 3.5 3.5-3.5"/></svg>
+        </div>
+        <div class="soap-field-body">
+          <div class="dx-list" id="dx-list">
+            <div class="dx-item">
+              <div class="dx-code">I10</div>
+              <div class="dx-name">Essential Hypertension, Stage 2 — Inadequately controlled</div>
+              <button class="dx-remove" onclick="removeDx(this)" title="Remove"><svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg></button>
+            </div>
+            <div class="dx-item">
+              <div class="dx-code">E78.5</div>
+              <div class="dx-name">Dyslipidemia — On statin therapy</div>
+              <button class="dx-remove" onclick="removeDx(this)" title="Remove"><svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg></button>
+            </div>
+            <div class="dx-item">
+              <div class="dx-code">N18.2</div>
+              <div class="dx-name">CKD Stage 2 — eGFR 78, monitor quarterly</div>
+              <button class="dx-remove" onclick="removeDx(this)" title="Remove"><svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg></button>
+            </div>
+          </div>
+          <div class="dx-add-row">
+            <input class="dx-add-input" id="dx-input" type="text" placeholder="ICD-10 code or diagnosis name…"/>
+            <button class="btn-xs primary" onclick="addDx()">
+              <svg viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9"/></svg>
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- P -->
+      <div class="soap-field-group" id="sg-p">
+        <div class="soap-field-header" onclick="toggleSoapGroup('sg-p')">
+          <div class="soap-field-badge p">P</div>
+          <div class="soap-field-title">Plan <span>Treatment &amp; follow-up actions</span></div>
+          <svg class="soap-field-chevron" viewBox="0 0 12 12"><path d="M2.5 4.5l3.5 3.5 3.5-3.5"/></svg>
+        </div>
+        <div class="soap-field-body">
+          <div id="plan-list">
+            <div class="plan-row"><span class="plan-num">1.</span><span class="plan-text">Continue Amlodipine 10mg + Hydrochlorothiazide 25mg once daily.</span></div>
+            <div class="plan-row"><span class="plan-num">2.</span><span class="plan-text">Order 24h ambulatory BP monitoring.</span></div>
+            <div class="plan-row"><span class="plan-num">3.</span><span class="plan-text">Refer to dietician for DASH diet and sodium restriction counseling.</span></div>
+            <div class="plan-row"><span class="plan-num">4.</span><span class="plan-text">Repeat lipid panel and eGFR in 3 months.</span></div>
+            <div class="plan-row"><span class="plan-num">5.</span><span class="plan-text">Follow-up in 2 weeks — sooner if BP worsens or headaches intensify.</span></div>
+          </div>
+          <div class="plan-add">
+            <input class="plan-input" id="plan-input" type="text" placeholder="Add a plan item…"/>
+            <button class="btn-xs primary" onclick="addPlan()">
+              <svg viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9"/></svg>
+              Add
+            </button>
+          </div>
+          <div class="soap-quick-tags" style="margin-top:10px">
+            <button class="soap-tag" onclick="addPlanText('Refer to specialist.')">+ Referral</button>
+            <button class="soap-tag" onclick="addPlanText('Order CBC with differential.')">+ Order CBC</button>
+            <button class="soap-tag" onclick="addPlanText('Request ECG.')">+ Order ECG</button>
+            <button class="soap-tag" onclick="addPlanText('Patient education provided.')">+ Pt education</button>
+            <button class="soap-tag" onclick="addPlanText('RTC in 1 week.')">+ RTC 1wk</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-soap -->
+
+    <!-- ─ PATIENT PANE ─ -->
+    <div class="tc-pane" id="pane-patient">
+
+      <!-- Patient header -->
+      <div class="pt-context-card">
+        <div class="pt-context-head">
+          <div class="pt-context-avatar">JD</div>
+          <div>
+            <div class="pt-context-name">Juan Dela Cruz</div>
+            <div class="pt-context-sub">MRN-0034812 · 47M · O+</div>
+            <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">
+              <span class="pill ok">Active</span>
+              <span class="pill warn">Hypertension</span>
+              <span class="pill crit xs">Penicillin</span>
+            </div>
+          </div>
+        </div>
+        <div class="pt-context-meta">
+          <div class="pt-meta-cell"><div class="pt-meta-key">Attending</div><div class="pt-meta-val">Dr. M. Santos</div></div>
+          <div class="pt-meta-cell"><div class="pt-meta-key">Last Visit</div><div class="pt-meta-val">Jun 01, 2026</div></div>
+          <div class="pt-meta-cell"><div class="pt-meta-key">Phone</div><div class="pt-meta-val">+63 917 555 0191</div></div>
+          <div class="pt-meta-cell"><div class="pt-meta-key">Civil Status</div><div class="pt-meta-val">Married</div></div>
+        </div>
+      </div>
+
+      <!-- Latest vitals -->
+      <div>
+        <div class="section-label">Latest Vitals <span style="font-size:10px;color:var(--faint);font-weight:400">Jun 01, 2026</span></div>
+        <div class="vital-row-mini">
+          <div class="vital-mini"><span class="vital-mini-label">Blood Pressure</span><span class="vital-mini-val warn">142/88 mmHg</span></div>
+          <div class="vital-mini"><span class="vital-mini-label">Heart Rate</span><span class="vital-mini-val">78 bpm</span></div>
+          <div class="vital-mini"><span class="vital-mini-label">Temperature</span><span class="vital-mini-val">36.8°C</span></div>
+          <div class="vital-mini"><span class="vital-mini-label">SpO₂</span><span class="vital-mini-val">98%</span></div>
+          <div class="vital-mini"><span class="vital-mini-label">Weight</span><span class="vital-mini-val warn">82 kg</span></div>
+        </div>
+      </div>
+
+      <!-- Active Rx -->
+      <div>
+        <div class="section-label">Active Prescriptions</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div class="rx-mini"><div class="rx-mini-dot"></div><div class="rx-mini-name">Amlodipine 10mg</div><div class="rx-mini-dose">1× daily</div></div>
+          <div class="rx-mini"><div class="rx-mini-dot"></div><div class="rx-mini-name">Hydrochlorothiazide 25mg</div><div class="rx-mini-dose">1× daily</div></div>
+          <div class="rx-mini"><div class="rx-mini-dot" style="background:var(--warn-text)"></div><div class="rx-mini-name">Rosuvastatin 10mg</div><div class="rx-mini-dose">1× nightly · <span style="color:var(--warn-text);font-size:11px">Renew soon</span></div></div>
+        </div>
+      </div>
+
+      <!-- Allergies -->
+      <div>
+        <div class="section-label">Allergies &amp; Alerts</div>
+        <div style="background:var(--crit-bg);border-radius:var(--rsm);padding:10px 12px;display:flex;align-items:center;gap:8px">
+          <svg style="width:14px;height:14px;stroke:var(--crit-text);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0" viewBox="0 0 14 14"><path d="M7 1.5l5.5 10h-11z"/><path d="M7 6v2.5M7 10.5v.3"/></svg>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--crit-text)">Penicillin Allergy</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">Avoid all beta-lactam antibiotics</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-patient -->
+
+    <!-- ─ CHAT PANE ─ -->
+    <div class="tc-pane" id="pane-chat">
+      <div class="chat-area" id="chat-area">
+        <div class="chat-msg">
+          <div class="chat-avatar" style="background:#6c63ff">JD</div>
+          <div>
+            <div class="chat-bubble pt">Good morning, doc. I took my meds today.</div>
+            <div class="chat-time pt">9:02 AM</div>
+          </div>
+        </div>
+        <div class="chat-msg patient">
+          <div class="chat-avatar" style="background:var(--accent)">MS</div>
+          <div>
+            <div class="chat-bubble dr">Good morning, Juan! Great to hear. Can you describe the headaches for me?</div>
+            <div class="chat-time">9:03 AM</div>
+          </div>
+        </div>
+        <div class="chat-msg">
+          <div class="chat-avatar" style="background:#6c63ff">JD</div>
+          <div>
+            <div class="chat-bubble pt">They're usually dull, around 6/10. Mostly in the morning when I wake up.</div>
+            <div class="chat-time pt">9:04 AM</div>
+          </div>
+        </div>
+        <div class="chat-msg patient">
+          <div class="chat-avatar" style="background:var(--accent)">MS</div>
+          <div>
+            <div class="chat-bubble dr">Thank you. Are you still following the DASH diet we discussed?</div>
+            <div class="chat-time">9:05 AM</div>
+          </div>
+        </div>
+        <div class="chat-msg">
+          <div class="chat-avatar" style="background:#6c63ff">JD</div>
+          <div>
+            <div class="chat-bubble pt">Honestly not consistently, doc. Work has been very stressful lately.</div>
+            <div class="chat-time pt">9:06 AM</div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" type="text" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button class="chat-send" onclick="sendChat()">
+          <svg viewBox="0 0 14 14"><path d="M1.5 7l11-5.5-5.5 11L6 7.5 1.5 7zM6 7.5L12.5 1.5"/></svg>
+        </button>
+      </div>
+    </div><!-- /pane-chat -->
+
+    <!-- Finalize Bar -->
+    <div class="soap-finalize-bar">
+      <div class="soap-status">Status: <strong>Draft</strong> · Auto-saved 9:08 AM</div>
+      <button class="btn-xs outline" onclick="showToast('Printing preview…')">
+        <svg viewBox="0 0 12 12"><rect x="1.5" y="4.5" width="9" height="6" rx="1"/><path d="M3.5 4.5V2a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v2.5"/><path d="M3.5 8.5h5"/></svg>
+        Print
+      </button>
+      <button class="btn-xs primary" onclick="finalizeSOAP()">
+        <svg viewBox="0 0 12 12"><path d="M2 6.5l3 3 5-6"/></svg>
+        Finalize &amp; Sign
+      </button>
+    </div>
+
+  </div><!-- /tc-right -->
+</div><!-- /tc-layout -->
+
+<!-- END CALL MODAL -->
+<div class="modal-overlay" id="modal-end" onclick="closeEndModalOutside(event)">
+  <div class="modal">
+    <div class="modal-top">
+      <span class="modal-title">End Consultation?</span>
+      <button class="modal-close" onclick="closeEndModal()"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:16px">This will end the session for all participants. Your SOAP note draft will be saved and you can finalize it afterwards.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink);cursor:pointer">
+          <input type="checkbox" checked style="accent-color:var(--accent)"/>
+          Save SOAP note as draft
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink);cursor:pointer">
+          <input type="checkbox" style="accent-color:var(--accent)"/>
+          Send visit summary to patient via SMS
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink);cursor:pointer">
+          <input type="checkbox" style="accent-color:var(--accent)"/>
+          Generate follow-up appointment
+        </label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeEndModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="endCall()">End Call</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toast">
+  <div class="toast">
+    <svg viewBox="0 0 15 15"><path d="M7.5 1.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM5 7.5l2 2 3.5-4"/></svg>
+    <span id="toast-msg">Saved</span>
+  </div>
+</div>
+
+<script>
+// ── DARK MODE ──
+function toggleDark(){
+  document.documentElement.classList.toggle('dark')
+}
+
+// ── SESSION TIMER ──
+let seconds = 0
+setInterval(()=>{
+  seconds++
+  const m = String(Math.floor(seconds/60)).padStart(2,'0')
+  const s = String(seconds%60).padStart(2,'0')
+  document.getElementById('session-timer').textContent = m+':'+s
+}, 1000)
+
+// ── TABS ──
+function tcTab(el, id){
+  document.querySelectorAll('.tc-tab').forEach(t=>t.classList.remove('active'))
+  document.querySelectorAll('.tc-pane').forEach(p=>p.classList.remove('active'))
+  el.classList.add('active')
+  document.getElementById(id).classList.add('active')
+}
+
+// ── VIDEO CONTROLS ──
+const states = {mic:false, cam:true}
+function toggleCtrl(type){
+  states[type] = !states[type]
+  const btn = document.getElementById('btn-'+type)
+  if(type === 'mic'){
+    btn.classList.toggle('danger', !states.mic)
+    showToast(states.mic ? 'Microphone unmuted' : 'Microphone muted')
+  } else {
+    showToast(states.cam ? 'Camera on' : 'Camera off')
+  }
+}
+
+// ── SOAP COLLAPSIBLE ──
+function toggleSoapGroup(id){
+  document.getElementById(id).classList.toggle('collapsed')
+}
+
+// ── QUICK TAG APPEND ──
+function appendSoap(id, text){
+  const el = document.getElementById(id)
+  el.value = (el.value.trim() ? el.value.trim() + ' ' : '') + text
+  el.focus()
+}
+
+// ── DIAGNOSES ──
+function addDx(){
+  const input = document.getElementById('dx-input')
+  const val = input.value.trim()
+  if(!val) return
+  const list = document.getElementById('dx-list')
+  const item = document.createElement('div')
+  item.className = 'dx-item'
+  const parts = val.split(' ')
+  const code = parts[0].match(/[A-Z]\d/i) ? parts[0] : '—'
+  const name = code !== '—' ? parts.slice(1).join(' ') || val : val
+  item.innerHTML = `<div class="dx-code">${code}</div><div class="dx-name">${name}</div><button class="dx-remove" onclick="removeDx(this)" title="Remove"><svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg></button>`
+  list.appendChild(item)
+  input.value = ''
+  showToast('Diagnosis added')
+}
+function removeDx(btn){
+  btn.closest('.dx-item').remove()
+}
+
+// ── PLAN ──
+let planCount = 5
+function addPlan(){
+  const input = document.getElementById('plan-input')
+  const val = input.value.trim()
+  if(!val) return
+  planCount++
+  const list = document.getElementById('plan-list')
+  const row = document.createElement('div')
+  row.className = 'plan-row'
+  row.innerHTML = `<span class="plan-num">${planCount}.</span><span class="plan-text">${val}</span>`
+  list.appendChild(row)
+  input.value = ''
+}
+function addPlanText(text){
+  planCount++
+  const list = document.getElementById('plan-list')
+  const row = document.createElement('div')
+  row.className = 'plan-row'
+  row.innerHTML = `<span class="plan-num">${planCount}.</span><span class="plan-text">${text}</span>`
+  list.appendChild(row)
+}
+
+// ── FINALIZE ──
+function finalizeSOAP(){
+  const s = document.getElementById('soap-s').value.trim()
+  const o = document.getElementById('soap-o').value.trim()
+  if(!s || !o){ showToast('Please complete S and O sections first'); return }
+  document.querySelector('.soap-status').innerHTML = 'Status: <strong style="color:var(--accent)">Finalized</strong> · Signed 9:09 AM by Dr. M. Santos'
+  showToast('SOAP note finalized and signed')
+}
+
+// ── CHAT ──
+function sendChat(){
+  const input = document.getElementById('chat-input')
+  const val = input.value.trim()
+  if(!val) return
+  const area = document.getElementById('chat-area')
+  const now = new Date()
+  const time = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')
+  const msg = document.createElement('div')
+  msg.className = 'chat-msg patient'
+  msg.innerHTML = `<div class="chat-avatar" style="background:var(--accent)">MS</div><div><div class="chat-bubble dr">${val}</div><div class="chat-time">${time} AM</div></div>`
+  area.appendChild(msg)
+  input.value = ''
+  area.scrollTop = area.scrollHeight
+}
+
+// ── END CALL MODAL ──
+function openEndModal(){ document.getElementById('modal-end').classList.add('open') }
+function closeEndModal(){ document.getElementById('modal-end').classList.remove('open') }
+function closeEndModalOutside(e){ if(e.target===document.getElementById('modal-end')) closeEndModal() }
+function endCall(){
+  closeEndModal()
+  showToast('Session ended · SOAP note saved as draft')
+  setTimeout(()=>{ window.location.href='emr_updated_2.html' }, 2000)
+}
+
+// ── TOAST ──
+let toastTimer
+function showToast(msg){
+  const tw = document.getElementById('toast')
+  document.getElementById('toast-msg').textContent = msg
+  tw.classList.add('show')
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(()=>tw.classList.remove('show'), 2800)
+}
+</script>
+</body>
+</html>

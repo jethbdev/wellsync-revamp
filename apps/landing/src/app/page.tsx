@@ -178,12 +178,10 @@ export default function LandingHome() {
         borderBottom: "1px solid var(--border-subtle)"
       }}>
         <Link href="/" className="nav-logo">
-          <div className="logo-icon">
-            <svg viewBox="0 0 20 20" style={{ width: 18, height: 18, fill: "white" }}>
-              <path d="M10 2a1 1 0 0 1 1 1v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V3a1 1 0 0 1 1-1zm0 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
-            </svg>
+          <div className="logo-icon" style={{ background: "none" }}>
+            <img src="/favicon.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
-          <span>MediStock</span>
+          <span>Wellsync</span>
         </Link>
         
         <div className="nav-links">
@@ -1020,12 +1018,10 @@ export default function LandingHome() {
         <div className="ft">
           <div className="fb">
             <a href="#" className="flo">
-              <div className="logo-icon">
-                <svg viewBox="0 0 20 20" style={{ width: 18, height: 18, fill: "white" }}>
-                  <path d="M10 2a1 1 0 0 1 1 1v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V3a1 1 0 0 1 1-1zm0 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
-                </svg>
+              <div className="logo-icon" style={{ background: "none" }}>
+                <img src="/favicon.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
               </div>
-              <span>MediStock</span>
+              <span>Wellsync</span>
             </a>
             <p>Health inventory management that keeps your clinic stocked, compliant, and confident.</p>
           </div>

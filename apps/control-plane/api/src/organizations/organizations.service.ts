@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { execSync } from 'child_process';
 import * as path from 'path';
+import { TenantConnectionManager } from '@healthbridge/database';
 
 @Injectable()
 export class OrganizationsService {
@@ -160,5 +161,41 @@ export class OrganizationsService {
       where: { id: orgId },
       data: { status }
     });
+  }
+
+  async lookupTenantByEmail(email: string) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      throw new BadRequestException('Invalid email');
+    }
+
+    const orgs = await this.prisma.cpOrganization.findMany({
+      where: { status: 'ACTIVE' }
+    });
+
+    const matchPromises = orgs.map(async (org) => {
+      try {
+        const tenantClient = await TenantConnectionManager.getClient(org.slug);
+        const roles: ('staff' | 'patient')[] = [];
+
+        const [staffUser, patientUser] = await Promise.all([
+          tenantClient.user.findUnique({ where: { email: cleanEmail } }),
+          tenantClient.patient.findFirst({ where: { email: cleanEmail } })
+        ]);
+
+        if (staffUser) roles.push('staff');
+        if (patientUser) roles.push('patient');
+
+        if (roles.length > 0) {
+          return { slug: org.slug, name: org.name, roles };
+        }
+      } catch (err) {
+        console.error(`Failed to lookup email in tenant ${org.slug}`, err);
+      }
+      return null;
+    });
+
+    const results = await Promise.all(matchPromises);
+    return results.filter((r): r is NonNullable<typeof r> => r !== null);
   }
 }

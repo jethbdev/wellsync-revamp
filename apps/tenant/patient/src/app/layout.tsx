@@ -3,8 +3,11 @@ import "@healthbridge/ui/dist/styles.css";
 import { Providers } from "./providers";
 
 export const metadata = {
-  title: "HealthBridge Patient Portal",
+  title: "Wellsync Patient",
   description: "Access your health records and appointments",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
@@ -15,6 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-lock" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.png" type="image/png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

@@ -2,20 +2,52 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Button, ThemeToggle, Card, CardHeader, CardTitle, CardBody, Field, Input } from "@healthbridge/ui";
+import { Button, ThemeToggle, Card, CardBody, Field, Input } from "@healthbridge/ui";
 
 export default function LandingLogin() {
-  const [selectedPortal, setSelectedPortal] = React.useState<"staff" | "patient" | "ops">("staff");
+  const [email, setEmail] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [searched, setSearched] = React.useState(false);
+  const [errorMsg, setErrorMsg] = React.useState("");
+  const [orgsList, setOrgsList] = React.useState<any[]>([]);
 
-  const handleRedirect = (e: React.FormEvent) => {
+  const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedPortal === "staff") {
-      window.location.href = "http://localhost:3000/login";
-    } else if (selectedPortal === "patient") {
-      window.location.href = "http://localhost:3002/login";
-    } else if (selectedPortal === "ops") {
-      window.location.href = "http://localhost:3001/login";
+    if (!email) return;
+
+    setLoading(true);
+    setErrorMsg("");
+
+    try {
+      const res = await fetch(`http://localhost:4001/api/organizations/lookup?email=${encodeURIComponent(email)}`);
+      if (!res.ok) throw new Error("Lookup failed");
+      const data = await res.json();
+      setOrgsList(data);
+      setSearched(true);
+
+      // If exactly 1 organization with 1 role, redirect instantly
+      if (data.length === 1 && data[0].roles.length === 1) {
+        const match = data[0];
+        const role = match.roles[0];
+        const port = role === "staff" ? "3000" : "3002";
+        window.location.href = `http://localhost:${port}/login?tenant=${match.slug}&email=${encodeURIComponent(email)}`;
+      }
+    } catch (err: any) {
+      setErrorMsg("Failed to check email. Please try again.");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleOrgClick = (slug: string, role: string) => {
+    const port = role === "staff" ? "3000" : "3002";
+    window.location.href = `http://localhost:${port}/login?tenant=${slug}&email=${encodeURIComponent(email)}`;
+  };
+
+  const handleReset = () => {
+    setSearched(false);
+    setOrgsList([]);
+    setErrorMsg("");
   };
 
   return (
@@ -54,15 +86,13 @@ export default function LandingLogin() {
             color: "var(--ink)",
             textDecoration: "none"
           }}>
-            <div className="logo-icon">
-              <svg viewBox="0 0 20 20" style={{ width: 22, height: 22, fill: "white" }}>
-                <path d="M10 2a1 1 0 0 1 1 1v1h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V3a1 1 0 0 1 1-1zm0 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>
-              </svg>
+            <div className="logo-icon" style={{ background: "none" }}>
+              <img src="/favicon.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             </div>
-            <span>MediStock</span>
+            <span>Wellsync</span>
           </Link>
           <p style={{ fontSize: "14px", color: "var(--muted)", marginTop: "8px" }}>
-            Select your portal to sign in
+            Sign in to your portal
           </p>
         </div>
 
@@ -73,114 +103,112 @@ export default function LandingLogin() {
           boxShadow: "var(--card-shadow)"
         }}>
           <CardBody style={{ padding: "32px" }}>
-            
-            <form onSubmit={handleRedirect}>
-              
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "28px" }}>
-                
-                {/* Staff option */}
-                <div
-                  onClick={() => setSelectedPortal("staff")}
-                  style={{
-                    padding: "16px",
-                    borderRadius: "var(--rmd)",
-                    border: `1.5px solid ${selectedPortal === "staff" ? "var(--accent)" : "var(--border)"}`,
-                    background: selectedPortal === "staff" ? "var(--accent-light)" : "var(--white)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  <div style={{
-                    width: "20px",
-                    height: "20px",
-                    borderRadius: "50%",
-                    border: "2px solid var(--accent)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>
-                    {selectedPortal === "staff" && <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--accent)" }} />}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)" }}>Clinic / Pharmacy Staff</div>
-                    <div style={{ fontSize: "11px", color: "var(--muted)" }}>Log in to dispense stock &amp; manage patients</div>
-                  </div>
-                </div>
 
-                {/* Patient option */}
-                <div
-                  onClick={() => setSelectedPortal("patient")}
-                  style={{
-                    padding: "16px",
-                    borderRadius: "var(--rmd)",
-                    border: `1.5px solid ${selectedPortal === "patient" ? "var(--accent)" : "var(--border)"}`,
-                    background: selectedPortal === "patient" ? "var(--accent-light)" : "var(--white)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  <div style={{
-                    width: "20px",
-                    height: "20px",
-                    borderRadius: "50%",
-                    border: "2px solid var(--accent)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>
-                    {selectedPortal === "patient" && <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--accent)" }} />}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)" }}>Patient Portal</div>
-                    <div style={{ fontSize: "11px", color: "var(--muted)" }}>Claim prescriptions and schedule visits</div>
-                  </div>
-                </div>
-
-                {/* Ops option */}
-                <div
-                  onClick={() => setSelectedPortal("ops")}
-                  style={{
-                    padding: "16px",
-                    borderRadius: "var(--rmd)",
-                    border: `1.5px solid ${selectedPortal === "ops" ? "var(--accent)" : "var(--border)"}`,
-                    background: selectedPortal === "ops" ? "var(--accent-light)" : "var(--white)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  <div style={{
-                    width: "20px",
-                    height: "20px",
-                    borderRadius: "50%",
-                    border: "2px solid var(--accent)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}>
-                    {selectedPortal === "ops" && <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--accent)" }} />}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)" }}>Platform Ops Admin</div>
-                    <div style={{ fontSize: "11px", color: "var(--muted)" }}>Onboard clinics and review audit trails</div>
-                  </div>
-                </div>
-
+            {errorMsg && (
+              <div style={{
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgb(239, 68, 68)",
+                color: "rgb(220, 38, 38)",
+                padding: "10px",
+                borderRadius: "6px",
+                fontSize: "13px",
+                marginBottom: "16px",
+                textAlign: "center"
+              }}>
+                {errorMsg}
               </div>
+            )}
+            
+            {!searched ? (
+              <form onSubmit={handleLookup}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
+                  <Field label="Enter your email address">
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="e.g. staff@clinic.ph or patient@care.com"
+                      required
+                    />
+                  </Field>
+                </div>
 
-              <Button type="submit" variant="primary" style={{ width: "100%", padding: "12px" }}>
-                Continue to Portal
-              </Button>
+                <Button type="submit" variant="primary" style={{ width: "100%", padding: "12px" }} disabled={loading}>
+                  {loading ? "Checking accounts..." : "Continue"}
+                </Button>
 
-            </form>
+                <div style={{ textAlign: "center", marginTop: "24px", fontSize: "12px", borderTop: "1px solid var(--border-subtle)", paddingTop: "16px" }}>
+                  <a href="http://localhost:3001/login" style={{ color: "var(--muted)", textDecoration: "none", fontWeight: 600 }}>
+                    Are you a Platform Ops Admin? Sign in here
+                  </a>
+                </div>
+              </form>
+            ) : orgsList.length === 0 ? (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "20px" }}>
+                  No accounts found for <strong style={{ color: "var(--ink)" }}>{email}</strong>. Please check the email spelling or contact your administrator.
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <Button type="button" variant="primary" style={{ width: "100%", padding: "12px" }} onClick={handleReset}>
+                    Try Another Email
+                  </Button>
+                  <Link href="/signup" className="btn btn-secondary" style={{ width: "100%", padding: "12px", textDecoration: "none", textAlign: "center", display: "block", boxSizing: "border-box" }}>
+                    Register Clinic Free
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "16px" }}>
+                  Choose an account to sign in as:
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+                  {orgsList.map((org) =>
+                    org.roles.map((role: string) => (
+                      <div
+                        key={`${org.slug}-${role}`}
+                        onClick={() => handleOrgClick(org.slug, role)}
+                        style={{
+                          padding: "14px 16px",
+                          borderRadius: "var(--rmd)",
+                          border: "1.5px solid var(--border)",
+                          background: "var(--surface)",
+                          cursor: "pointer",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          transition: "all 0.15s"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = "var(--accent)";
+                          e.currentTarget.style.background = "var(--white)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = "var(--border)";
+                          e.currentTarget.style.background = "var(--surface)";
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--ink)" }}>{org.name}</div>
+                          <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+                            {role === "staff" ? "Clinic Staff Portal" : "Patient Portal"}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "12px", color: "var(--accent)", fontWeight: 600 }}>
+                          Sign in →
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <Button type="button" variant="ghost" style={{ width: "100%", padding: "12px" }} onClick={handleReset}>
+                  ← Back to Email Entry
+                </Button>
+              </div>
+            )}
 
             <div style={{ textAlign: "center", marginTop: "24px", fontSize: "12px" }}>
               <span style={{ color: "var(--muted)" }}>New clinic? </span>
