@@ -41,7 +41,7 @@ export default function LandingLogin() {
     if (isDev) {
       return "http://localhost:4001";
     } else {
-      return `https://api.${getBaseDomain()}`;
+      return `https://api.console.${getBaseDomain()}`;
     }
   };
 
