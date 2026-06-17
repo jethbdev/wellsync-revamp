@@ -2,11 +2,53 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { execSync } from 'child_process';
 import * as path from 'path';
+import * as crypto from 'crypto';
+import * as fs from 'fs';
+import { Client } from 'pg';
 import { TenantConnectionManager } from '@healthbridge/database';
+
+function getMonorepoRoot(): string {
+  if (process.env.MONOREPO_ROOT) {
+    return process.env.MONOREPO_ROOT;
+  }
+  let currentDir = __dirname;
+  for (let i = 0; i < 6; i++) {
+    if (fs.existsSync(path.join(currentDir, 'packages')) && fs.existsSync(path.join(currentDir, 'package.json'))) {
+      return currentDir;
+    }
+    currentDir = path.dirname(currentDir);
+  }
+  if (fs.existsSync('/app/packages')) {
+    return '/app';
+  }
+  return '/home/jyty/Personal/healthbridge';
+}
 
 @Injectable()
 export class OrganizationsService {
   constructor(private prisma: PrismaService) {}
+
+  private async waitForDbConnection(connectionUri: string): Promise<void> {
+    const maxRetries = 20;
+    const delayMs = 1500;
+    
+    for (let i = 1; i <= maxRetries; i++) {
+      const client = new Client({ connectionString: connectionUri });
+      try {
+        await client.connect();
+        await client.end();
+        console.log(`[Provisioning] Successfully established database connection!`);
+        return;
+      } catch (err: any) {
+        console.log(`[Provisioning] Database connection attempt ${i}/${maxRetries} failed: ${err.message}. Retrying in ${delayMs}ms...`);
+        try {
+          await client.end();
+        } catch {}
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+    throw new Error(`Failed to establish database connection after ${maxRetries} retries.`);
+  }
 
   async create(data: { name: string; slug: string; type: string; billingEmail?: string }) {
     const cleanSlug = data.slug.replace(/[^a-z0-9_-]/g, '').toLowerCase();
@@ -22,22 +64,95 @@ export class OrganizationsService {
     }
 
     const dbName = `healthbridge_tenant_${cleanSlug}`;
-    const dbConnectionUri = `postgresql://postgres@localhost:5432/${dbName}`;
+    let dbConnectionUri = `postgresql://postgres@localhost:5432/${dbName}`;
 
-    // 1. Create Database dynamically in PostgreSQL
-    console.log(`[Provisioning] Creating database ${dbName}...`);
-    try {
-      await this.prisma.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`);
-    } catch (e: any) {
-      if (!e.message.includes('already exists')) {
-        console.error('Failed to create database', e);
-        throw new BadRequestException(`Database creation failed: ${e.message}`);
+    const useDokploy = !!(process.env.DOKPLOY_API_KEY && process.env.DOKPLOY_ENVIRONMENT_ID);
+
+    if (useDokploy) {
+      const dokployApiUrl = process.env.DOKPLOY_API_URL || 'http://localhost:3000/api';
+      const dokployApiKey = process.env.DOKPLOY_API_KEY!;
+      const environmentId = process.env.DOKPLOY_ENVIRONMENT_ID!;
+      const dbPassword = crypto.randomBytes(16).toString('hex');
+      const dbUser = 'postgres';
+      const serviceName = `healthbridge-tenant-${cleanSlug}`;
+
+      console.log(`[Provisioning] Creating Dokploy Postgres service: ${serviceName}...`);
+
+      try {
+        const createRes = await fetch(`${dokployApiUrl}/postgres.create`, {
+          method: 'POST',
+          headers: {
+            'x-api-key': dokployApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: serviceName,
+            databaseName: dbName,
+            databaseUser: dbUser,
+            databasePassword: dbPassword,
+            environmentId,
+          }),
+        });
+
+        if (!createRes.ok) {
+          const errMsg = await createRes.text();
+          throw new Error(`Dokploy API postgres.create failed: ${errMsg}`);
+        }
+
+        const createData = await createRes.json();
+        const postgresId = createData.data?.postgresId || createData.postgresId || createData.result?.data?.postgresId || createData.id;
+        const appName = createData.data?.appName || createData.appName || createData.result?.data?.appName;
+
+        if (!postgresId) {
+          throw new Error(`Dokploy API did not return postgresId. Response: ${JSON.stringify(createData)}`);
+        }
+
+        console.log(`[Provisioning] Dokploy Postgres service created with postgresId: ${postgresId}, appName: ${appName}`);
+
+        console.log(`[Provisioning] Deploying Dokploy Postgres service...`);
+        const deployRes = await fetch(`${dokployApiUrl}/postgres.deploy`, {
+          method: 'POST',
+          headers: {
+            'x-api-key': dokployApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            postgresId,
+          }),
+        });
+
+        if (!deployRes.ok) {
+          const errMsg = await deployRes.text();
+          throw new Error(`Dokploy API postgres.deploy failed: ${errMsg}`);
+        }
+
+        const dbHost = appName ? `dokploy-${appName}` : serviceName;
+        dbConnectionUri = `postgresql://${dbUser}:${dbPassword}@${dbHost}:5432/${dbName}`;
+
+        console.log(`[Provisioning] Dokploy connection string resolved: postgresql://${dbUser}:****@${dbHost}:5432/${dbName}`);
+
+        console.log(`[Provisioning] Waiting for Postgres database at ${dbHost}:5432 to accept connections...`);
+        await this.waitForDbConnection(dbConnectionUri);
+
+      } catch (e: any) {
+        console.error('Failed to create/deploy database via Dokploy', e);
+        throw new BadRequestException(`Dokploy database provisioning failed: ${e.message}`);
+      }
+    } else {
+      console.log(`[Provisioning] Creating local database ${dbName}...`);
+      try {
+        await this.prisma.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`);
+      } catch (e: any) {
+        if (!e.message.includes('already exists')) {
+          console.error('Failed to create database', e);
+          throw new BadRequestException(`Database creation failed: ${e.message}`);
+        }
       }
     }
 
     // 2. Run Prisma schema push on the newly created database
     console.log(`[Provisioning] Pushing schema to ${dbName}...`);
-    const rootDir = '/home/jyty/Personal/healthbridge';
+    const rootDir = getMonorepoRoot();
     const schemaPath = path.join(rootDir, 'packages/database/prisma/tenant.schema.prisma');
     try {
       execSync(`npx prisma db push --schema="${schemaPath}" --accept-data-loss`, {
