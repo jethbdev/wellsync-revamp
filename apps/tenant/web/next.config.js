@@ -3,10 +3,11 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@healthbridge/ui", "@healthbridge/core", "@healthbridge/contracts"],
   async rewrites() {
+    const apiUrl = process.env.API_URL || "http://localhost:4000";
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:4000/api/:path*",
+        destination: `${apiUrl}/api/:path*`,
       },
     ];
   },
