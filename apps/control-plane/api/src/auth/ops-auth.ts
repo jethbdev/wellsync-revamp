@@ -18,8 +18,6 @@ export const getOpsAuth = (prisma: ControlPlanePrismaClient): any => betterAuth(
       '*.localhost:3001',
       'localhost:4000',
       '*.localhost:4000',
-      'jethb.space',
-      '*.jethb.space',
       'wellsync.jethb.space',
       '*.wellsync.jethb.space'
     ],

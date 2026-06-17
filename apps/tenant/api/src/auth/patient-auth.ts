@@ -19,8 +19,6 @@ export const getPatientAuth = (prisma: TenantPrismaClient): any => betterAuth({
       '*.localhost:3002',
       'localhost:4000',
       '*.localhost:4000',
-      'jethb.space',
-      '*.jethb.space',
       'wellsync.jethb.space',
       '*.wellsync.jethb.space'
     ],
